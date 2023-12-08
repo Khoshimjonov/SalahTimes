@@ -1,0 +1,2 @@
+# SalahTimes
+Salah times widget
