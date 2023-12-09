@@ -1,9 +1,12 @@
 package uz.khoshimjonov.service;
 
-import uz.khoshimjonov.api.AlAdhanApi;
+import uz.khoshimjonov.api.Api;
+import uz.khoshimjonov.dto.Hijri;
 import uz.khoshimjonov.dto.PrayerTimesResponse;
 import uz.khoshimjonov.dto.Timings;
+import uz.khoshimjonov.dto.WidgetTextDto;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -13,28 +16,38 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SalahTimeService {
-    private final AlAdhanApi api;
-    private final DateTimeFormatter formatter;
-    private LocalDate currentDate;
-    private LocalTime tomorrowFajr;
-    private final Map<String, LocalTime> timings;
     private final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
+    private final PrayerTimeScheduler prayerTimeScheduler = PrayerTimeScheduler.getInstance();
+    private final Map<String, LocalTime> timings;
+    private final DateTimeFormatter formatter;
+    private final Api api;
+    private LocalTime tomorrowFajr;
+    private LocalDate currentDate;
+    private Hijri hijriDate;
+
+    public Map<String, LocalTime> getTimings() {
+        return timings;
+    }
+
+    public Hijri getHijriDate() {
+        return hijriDate;
+    }
 
     public SalahTimeService() {
-        api = new AlAdhanApi();
+        api = new Api();
         formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         currentDate = LocalDate.now();
         timings = new LinkedHashMap<>();
     }
 
-    public String[] getWidgetText() {
+    public WidgetTextDto getWidgetText(TrayIcon trayIcon) {
         try {
             LocalTime currentTime = LocalTime.now();
-            getTimingsIfNeeded();
-            if (timings.get("Isha").isBefore(currentTime)){
+            getTimingsIfNeeded(trayIcon);
+            if (timings.get(title("ishaTitle")).isBefore(currentTime)){
                 LocalDateTime tomorrow = LocalDateTime.of(LocalDate.now().plusDays(1), tomorrowFajr);
                 LocalDateTime today = LocalDateTime.now();
-                return getResultText(today.until(tomorrow, ChronoUnit.SECONDS), "Fajr", tomorrowFajr);
+                return getResultText(today.until(tomorrow, ChronoUnit.SECONDS), title("fajrTitle"), tomorrowFajr);
             } else {
                 for (Map.Entry<String, LocalTime> entry : timings.entrySet()) {
                     if (currentTime.isBefore(entry.getValue())) {
@@ -43,14 +56,13 @@ public class SalahTimeService {
                     }
                 }
             }
-            return new String[] {"Could not get Salah times", "", "RED"};
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new String[] {"Could not get Salah times", "", "RED"};
+        return new WidgetTextDto(("cantGetTitle"), "", new Color(185, 73, 58));
     }
 
-    private void getTimingsIfNeeded() throws Exception {
+    private void getTimingsIfNeeded(TrayIcon trayIcon) throws Exception {
         LocalDate realDate = LocalDate.now();
         if (configurationManager.apiSettingsUpdated || !currentDate.equals(realDate) || timings.isEmpty()){
             currentDate = realDate;
@@ -63,24 +75,32 @@ public class SalahTimeService {
             }
 
             Timings tomorrowTimings = tomorrowPrayerTimes.getData().getTimings();
-            tomorrowFajr = LocalTime.parse(tomorrowTimings.fajr);
+            tomorrowFajr = LocalTime.parse(tomorrowTimings.getFajr());
 
             Timings todaysTimings = prayerTimes.getData().getTimings();
-            timings.put("Fajr", LocalTime.parse(todaysTimings.fajr));
-            timings.put("Sunrise", LocalTime.parse(todaysTimings.sunrise));
-            timings.put("Dhuhr", LocalTime.parse(todaysTimings.dhuhr));
-            timings.put("Asr", LocalTime.parse(todaysTimings.asr));
-            timings.put("Maghrib", LocalTime.parse(todaysTimings.maghrib));
-            timings.put("Isha", LocalTime.parse(todaysTimings.isha));
+            timings.put(title("fajrTitle"), LocalTime.parse(todaysTimings.getFajr()));
+            timings.put(title("sunriseTitle"), LocalTime.parse(todaysTimings.getSunrise()));
+            timings.put(title("dhuhrTitle"), LocalTime.parse(todaysTimings.getDhuhr()));
+            timings.put(title("asrTitle"), LocalTime.parse(todaysTimings.getAsr()));
+            timings.put(title("maghribTitle"), LocalTime.parse(todaysTimings.getMaghrib()));
+            timings.put(title("ishaTitle"), LocalTime.parse(todaysTimings.getIsha()));
+            hijriDate = prayerTimes.getData().getDate().getHijri();
             configurationManager.apiSettingsUpdated = false;
+            if (configurationManager.isNotification()) {
+                prayerTimeScheduler.checkAndNotifyPrayerTimes(timings, trayIcon);
+            }
         }
     }
 
-    private static String[] getResultText(long remaining, String Salah, LocalTime time) {
+    private String title(String key) {
+        return LanguageHelper.getText(key);
+    }
+
+    private WidgetTextDto getResultText(long remaining, String Salah, LocalTime time) {
         long hours = remaining / 3600;
         long minutes = (remaining % 3600) / 60;
         long seconds = remaining % 60;
-        String color = remaining > 1800 ? "WHITE" : "RED";
-        return new String[]{String.format("%s at %s |", Salah, time), String.format("Remaining: %02d:%02d:%02d", hours, minutes, seconds), color};
+        Color color = remaining > 1800 ? Color.WHITE : new Color(185, 73, 58);
+        return new WidgetTextDto(String.format(title("widgetTextTitle"), Salah, time), String.format(title("remainingTitle"), hours, minutes, seconds), color);
     }
 }

@@ -6,6 +6,5 @@ public class Main {
     private static final SalahWidget widget = new SalahWidget();
     public static void main(String[] args) {
         widget.displayWidget();
-        System.out.println("Hello world!");
     }
 }

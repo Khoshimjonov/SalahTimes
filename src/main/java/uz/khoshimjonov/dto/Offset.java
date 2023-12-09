@@ -8,30 +8,30 @@ public class Offset {
 
     @SerializedName("Imsak")
     @Expose
-    public Integer imsak;
+    private Integer imsak;
     @SerializedName("Fajr")
     @Expose
-    public Integer fajr;
+    private Integer fajr;
     @SerializedName("Sunrise")
     @Expose
-    public Integer sunrise;
+    private Integer sunrise;
     @SerializedName("Dhuhr")
     @Expose
-    public Integer dhuhr;
+    private Integer dhuhr;
     @SerializedName("Asr")
     @Expose
-    public Integer asr;
+    private Integer asr;
     @SerializedName("Maghrib")
     @Expose
-    public Integer maghrib;
+    private Integer maghrib;
     @SerializedName("Sunset")
     @Expose
-    public Integer sunset;
+    private Integer sunset;
     @SerializedName("Isha")
     @Expose
-    public Integer isha;
+    private Integer isha;
     @SerializedName("Midnight")
     @Expose
-    public Integer midnight;
+    private Integer midnight;
 
 }

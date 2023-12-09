@@ -103,12 +103,21 @@ public class ConfigurationManager {
         saveConfig();
     }
 
-    public boolean isAutostart() {
-        return Boolean.parseBoolean(properties.getProperty("autostart", "false"));
+    public int getPointX() {
+        return Integer.parseInt(properties.getProperty("pointX", "100"));
     }
 
-    public void setAutostart(boolean autostart) {
-        properties.setProperty("autostart", String.valueOf(autostart));
+    public void setPointX(int pointX) {
+        properties.setProperty("pointX", String.valueOf(pointX));
+        saveConfig();
+    }
+
+    public int getPointY() {
+        return Integer.parseInt(properties.getProperty("pointY", "100"));
+    }
+
+    public void setPointY(int pointY) {
+        properties.setProperty("pointY", String.valueOf(pointY));
         saveConfig();
     }
 
@@ -121,12 +130,12 @@ public class ConfigurationManager {
         saveConfig();
     }
 
-    public boolean isApiSettingsUpdated() {
-        return Boolean.parseBoolean(properties.getProperty("apiSettingsUpdated", "true"));
+    public String getUserLanguage() {
+        return properties.getProperty("language", "en");
     }
 
-    public void setApiSettingsUpdated(boolean settingsUpdated) {
-        properties.setProperty("apiSettingsUpdated", String.valueOf(settingsUpdated));
+    public void setUserLanguage(String userLanguage) {
+        properties.setProperty("language", userLanguage);
         saveConfig();
     }
 
@@ -149,7 +158,6 @@ public class ConfigurationManager {
             properties.load(input);
         } catch (IOException e) {
             e.printStackTrace();
-            // Handle the exception, maybe create a default configuration
         }
     }
 
@@ -160,7 +168,6 @@ public class ConfigurationManager {
             apiSettingsUpdated = true;
         } catch (IOException e) {
             e.printStackTrace();
-            // Handle the exception, maybe show an error message
         }
     }
 }

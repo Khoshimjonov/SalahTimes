@@ -8,12 +8,23 @@ public class Month {
 
     @SerializedName("number")
     @Expose
-    public Integer number;
+    private Integer number;
     @SerializedName("en")
     @Expose
-    public String en;
+    private String en;
     @SerializedName("ar")
     @Expose
-    public String ar;
+    private String ar;
 
+    public Integer getNumber() {
+        return number;
+    }
+
+    public String getEn() {
+        return en;
+    }
+
+    public String getAr() {
+        return ar;
+    }
 }

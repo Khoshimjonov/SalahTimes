@@ -8,13 +8,13 @@ public class Data {
 
     @SerializedName("timings")
     @Expose
-    public Timings timings;
+    private Timings timings;
     @SerializedName("date")
     @Expose
-    public Date date;
+    private Date date;
     @SerializedName("meta")
     @Expose
-    public Meta meta;
+    private Meta meta;
 
     public Timings getTimings() {
         return timings;

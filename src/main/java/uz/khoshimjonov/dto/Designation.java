@@ -8,9 +8,9 @@ public class Designation {
 
     @SerializedName("abbreviated")
     @Expose
-    public String abbreviated;
+    private String abbreviated;
     @SerializedName("expanded")
     @Expose
-    public String expanded;
+    private String expanded;
 
 }

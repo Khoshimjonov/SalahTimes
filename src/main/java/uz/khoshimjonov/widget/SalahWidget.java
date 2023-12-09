@@ -1,15 +1,18 @@
 package uz.khoshimjonov.widget;
 
+import uz.khoshimjonov.dto.WidgetTextDto;
 import uz.khoshimjonov.service.ConfigurationManager;
+import uz.khoshimjonov.service.LanguageHelper;
 import uz.khoshimjonov.service.SalahTimeService;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,33 +20,39 @@ import java.util.concurrent.TimeUnit;
 
 public class SalahWidget {
 
-    private final boolean SET_LOOK_AND_FEEL;
-    private final int UPDATE_DELAY;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
     private final SalahTimeService salahTimeService = new SalahTimeService();
     private FrameDragListener frameDragListener = null;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final SystemTray tray;
+    private SalahTimesWindow salahTimesWindow;
     private final TrayIcon trayIcon;
-    private final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
+    private final SystemTray tray;
+    private final boolean SET_LOOK_AND_FEEL;
+    private final int UPDATE_DELAY;
+    private final int POINT_X;
+    private final int POINT_Y;
 
     public SalahWidget() {
         try {
-            SET_LOOK_AND_FEEL = configurationManager.getLookAndFeelEnabled();
-            UPDATE_DELAY = configurationManager.getUpdateDelay();
-
             if (!SystemTray.isSupported()) {
                 System.out.println("SystemTray is not supported");
                 throw new UnsupportedOperationException();
             }
+
+            this.SET_LOOK_AND_FEEL = configurationManager.getLookAndFeelEnabled();
+            this.UPDATE_DELAY = configurationManager.getUpdateDelay();
+            this.POINT_X = configurationManager.getPointX();
+            this.POINT_Y = configurationManager.getPointY();
             this.tray = SystemTray.getSystemTray();
 
             BufferedImage trayIconImage = ImageIO.read(Objects.requireNonNull(getClass().getResource("/images/app.png")));
             int trayIconWidth = new TrayIcon(trayIconImage).getSize().width;
-            this.trayIcon = new TrayIcon(trayIconImage.getScaledInstance(trayIconWidth, -1, Image.SCALE_SMOOTH), "Salah times");
+            this.trayIcon = new TrayIcon(trayIconImage.getScaledInstance(trayIconWidth, -1, Image.SCALE_SMOOTH), LanguageHelper.getText("tooltipTitle"));
             trayIcon.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON1) {
+                        showSalahTimesWindow(e);
                     }
                 }
             });
@@ -54,11 +63,6 @@ public class SalahWidget {
     }
 
     public void displayWidget() {
-
-        final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        final GraphicsDevice[] screens = ge.getScreenDevices();
-        final Rectangle bounds = screens[0].getDefaultConfiguration().getBounds();
-
         Runnable runnable = () -> {
             if (SET_LOOK_AND_FEEL) {
                 try {
@@ -75,7 +79,7 @@ public class SalahWidget {
 
             dialog.setLayout(new FlowLayout(FlowLayout.LEFT));
             dialog.requestFocus();
-            dialog.setMinimumSize(new Dimension(280, 30));
+            dialog.setMinimumSize(new Dimension(350, 30));
             dialog.setFocusableWindowState(false);
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             dialog.setUndecorated(true);
@@ -88,15 +92,11 @@ public class SalahWidget {
             dialog.toFront();
 
             scheduler.scheduleAtFixedRate(() -> {
-                String[] widgetText = salahTimeService.getWidgetText();
-                if (widgetText.length == 3) {
-                    timeLabel.setText(widgetText[0]);
-                    remainingLabel.setText(widgetText[1]);
-                    if (widgetText[2].equals("RED")){
-                        remainingLabel.setForeground(new Color(185, 73, 58));
-                    } else {
-                        remainingLabel.setForeground(Color.WHITE);
-                    }
+                WidgetTextDto widgetText = salahTimeService.getWidgetText(trayIcon);
+                if (widgetText != null) {
+                    timeLabel.setText(widgetText.getNextSalah());
+                    remainingLabel.setText(widgetText.getRemainingTime());
+                    remainingLabel.setForeground(widgetText.getTextColor());
                 }
                 if (configurationManager.isAlwaysOnTop()) {
                     dialog.toFront();
@@ -112,8 +112,7 @@ public class SalahWidget {
                     cleanup();
                 }
             });
-            Point bottomRight = new Point(50, bounds.y + bounds.height - dialog.getHeight() - 9);
-            dialog.setLocation(bottomRight);
+            dialog.setLocation(POINT_X, POINT_Y);
             dialog.setVisible(true);
 
             if (configurationManager.isDraggable()) {
@@ -124,11 +123,11 @@ public class SalahWidget {
 
             PopupMenu popupMenu = new PopupMenu();
 
-            MenuItem settingsItem = new MenuItem("Settings");
+            MenuItem settingsItem = new MenuItem(LanguageHelper.getText("settingsTitle"));
             settingsItem.addActionListener(e -> showSettingsWindow());
             popupMenu.add(settingsItem);
 
-            MenuItem exitItem = new MenuItem("Exit");
+            MenuItem exitItem = new MenuItem(LanguageHelper.getText("exitTitle"));
             exitItem.addActionListener(e -> {
                 cleanup();
                 tray.remove(trayIcon);
@@ -137,18 +136,10 @@ public class SalahWidget {
             popupMenu.add(exitItem);
 
             trayIcon.setPopupMenu(popupMenu);
+            showSettingsWindow();
         };
         SwingUtilities.invokeLater(runnable);
         Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
-    }
-
-    private void showNotification() {
-        try {
-            trayIcon.displayMessage("Time is almost up!", "Hurry up!", TrayIcon.MessageType.INFO);
-            //tray.remove(trayIcon);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private void showSettingsWindow() {
@@ -156,8 +147,17 @@ public class SalahWidget {
         settingsWindow.setVisible(true);
     }
 
+    private void showSalahTimesWindow(MouseEvent event) {
+        if (salahTimesWindow == null || !salahTimesWindow.isVisible()) {
+            salahTimesWindow = new SalahTimesWindow(salahTimeService.getTimings(), salahTimeService.getHijriDate(), event);
+        } else {
+            salahTimesWindow.setVisible(false);
+            salahTimesWindow = null;
+        }
+    }
+
     private void cleanup() {
-        System.err.println("App is closing...");
+        System.out.println("App is closing...");
         if (!scheduler.isShutdown()) {
             scheduler.shutdown();
             try {

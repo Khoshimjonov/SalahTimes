@@ -10,7 +10,6 @@ public class PrayerTimesResponse {
     @Expose
     private Data data;
 
-
     public Data getData() {
         return data;
     }

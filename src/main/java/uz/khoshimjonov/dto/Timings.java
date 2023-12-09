@@ -8,36 +8,79 @@ public class Timings {
 
     @SerializedName("Fajr")
     @Expose
-    public String fajr;
+    private String fajr;
     @SerializedName("Sunrise")
     @Expose
-    public String sunrise;
+    private String sunrise;
     @SerializedName("Dhuhr")
     @Expose
-    public String dhuhr;
+    private String dhuhr;
     @SerializedName("Asr")
     @Expose
-    public String asr;
+    private String asr;
     @SerializedName("Sunset")
     @Expose
-    public String sunset;
+    private String sunset;
     @SerializedName("Maghrib")
     @Expose
-    public String maghrib;
+    private String maghrib;
     @SerializedName("Isha")
     @Expose
-    public String isha;
+    private String isha;
     @SerializedName("Imsak")
     @Expose
-    public String imsak;
+    private String imsak;
     @SerializedName("Midnight")
     @Expose
-    public String midnight;
+    private String midnight;
     @SerializedName("Firstthird")
     @Expose
-    public String firstthird;
+    private String firstthird;
     @SerializedName("Lastthird")
     @Expose
-    public String lastthird;
+    private String lastthird;
 
+    public String getFajr() {
+        return fajr;
+    }
+
+    public String getSunrise() {
+        return sunrise;
+    }
+
+    public String getDhuhr() {
+        return dhuhr;
+    }
+
+    public String getAsr() {
+        return asr;
+    }
+
+    public String getSunset() {
+        return sunset;
+    }
+
+    public String getMaghrib() {
+        return maghrib;
+    }
+
+    public String getIsha() {
+        return isha;
+    }
+
+    public String getImsak() {
+        return imsak;
+    }
+
+    public String getMidnight() {
+        return midnight;
+    }
+
+    public String getFirstthird() {
+        return firstthird;
+    }
+
+    public String getLastthird() {
+        return lastthird;
+    }
 }

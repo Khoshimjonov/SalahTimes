@@ -8,9 +8,9 @@ public class Location {
 
     @SerializedName("latitude")
     @Expose
-    public Float latitude;
+    private Float latitude;
     @SerializedName("longitude")
     @Expose
-    public Float longitude;
+    private Float longitude;
 
 }

@@ -1,50 +1,34 @@
 package uz.khoshimjonov.api;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
+import uz.khoshimjonov.dto.NominatimResponse;
 import uz.khoshimjonov.dto.PrayerTimesResponse;
 
 import javax.net.ssl.*;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import java.util.List;
 
-public class AlAdhanApi {
-    private static final String URL = "https://api.aladhan.com/v1/timings/%s?school=%s&method=%s&latitude=%s&longitude=%s";
-    private final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
-
+public class Api {
+    private static final String AL_ADHAN_URL = "https://api.aladhan.com/v1/timings/%s?school=%s&method=%s&latitude=%s&longitude=%s";
+    private static final String NOMINATIM_URL = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=%s";
     private final Gson GSON = new Gson();
 
-    public void sendRequestAsync(String timings, int school, int method, String latitude, String longitude, Consumer<PrayerTimesResponse> callback) {
-        executeRequestAsync(
-                String.format(URL, timings, school, method, latitude, longitude),
-                PrayerTimesResponse.class,
-                r -> {
-                    if (r != null) {
-                        callback.accept((PrayerTimesResponse) r);
-                    }
-                }
-        );
-    }
-
-    private <T> void executeRequestAsync(String url, Class<?> type, Consumer<T> callback) {
-        EXECUTOR.execute(() -> {
-            try {
-                callback.accept(sendRequest(url, type));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
 
     public PrayerTimesResponse getSalahTimes(String timings, int school, int method, String latitude, String longitude) throws Exception {
-        return sendRequest( String.format(URL, timings, school, method, latitude, longitude), PrayerTimesResponse.class);
+        return sendRequest( String.format(AL_ADHAN_URL, timings, school, method, latitude, longitude), PrayerTimesResponse.class);
     }
 
-    private <T> T sendRequest(String url, Class<?> type) throws Exception {
+    public List<NominatimResponse> getPositionByAddress(String address) throws Exception {
+        Type listType = TypeToken.getParameterized(List.class, NominatimResponse.class).getType();
+        return sendRequest(String.format(NOMINATIM_URL, address), listType);
+    }
+
+    private <T> T sendRequest(String url, Type type) throws Exception {
 
         TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {

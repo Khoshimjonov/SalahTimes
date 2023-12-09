@@ -8,15 +8,30 @@ public class Date {
 
     @SerializedName("readable")
     @Expose
-    public String readable;
+    private String readable;
     @SerializedName("timestamp")
     @Expose
-    public String timestamp;
+    private String timestamp;
     @SerializedName("hijri")
     @Expose
-    public Hijri hijri;
+    private Hijri hijri;
     @SerializedName("gregorian")
     @Expose
-    public Gregorian gregorian;
+    private Gregorian gregorian;
 
+    public String getReadable() {
+        return readable;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public Hijri getHijri() {
+        return hijri;
+    }
+
+    public Gregorian getGregorian() {
+        return gregorian;
+    }
 }

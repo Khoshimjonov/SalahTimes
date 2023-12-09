@@ -8,24 +8,24 @@ public class Gregorian {
 
     @SerializedName("date")
     @Expose
-    public String date;
+    private String date;
     @SerializedName("format")
     @Expose
-    public String format;
+    private String format;
     @SerializedName("day")
     @Expose
-    public String day;
+    private String day;
     @SerializedName("weekday")
     @Expose
-    public Weekday weekday;
+    private Weekday weekday;
     @SerializedName("month")
     @Expose
-    public Month month;
+    private Month month;
     @SerializedName("year")
     @Expose
-    public String year;
+    private String year;
     @SerializedName("designation")
     @Expose
-    public Designation designation;
+    private Designation designation;
 
 }

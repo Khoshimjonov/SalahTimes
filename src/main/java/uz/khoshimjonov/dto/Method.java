@@ -8,15 +8,15 @@ public class Method {
 
     @SerializedName("id")
     @Expose
-    public Integer id;
+    private Integer id;
     @SerializedName("name")
     @Expose
-    public String name;
+    private String name;
     @SerializedName("params")
     @Expose
-    public Params params;
+    private Params params;
     @SerializedName("location")
     @Expose
-    public Location location;
+    private Location location;
 
 }

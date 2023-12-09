@@ -10,27 +10,58 @@ public class Hijri {
 
     @SerializedName("date")
     @Expose
-    public String date;
+    private String date;
     @SerializedName("format")
     @Expose
-    public String format;
+    private String format;
     @SerializedName("day")
     @Expose
-    public String day;
+    private String day;
     @SerializedName("weekday")
     @Expose
-    public Weekday weekday;
+    private Weekday weekday;
     @SerializedName("month")
     @Expose
-    public Month month;
+    private Month month;
     @SerializedName("year")
     @Expose
-    public String year;
+    private String year;
     @SerializedName("designation")
     @Expose
-    public Designation designation;
+    private Designation designation;
     @SerializedName("holidays")
     @Expose
-    public List<Object> holidays;
+    private List<Object> holidays;
 
+    public String getDate() {
+        return date;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public String getDay() {
+        return day;
+    }
+
+    public Weekday getWeekday() {
+        return weekday;
+    }
+
+    public Month getMonth() {
+        return month;
+    }
+
+    public String getYear() {
+        return year;
+    }
+
+    public Designation getDesignation() {
+        return designation;
+    }
+
+    public List<Object> getHolidays() {
+        return holidays;
+    }
 }

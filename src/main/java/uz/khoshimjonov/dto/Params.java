@@ -8,9 +8,9 @@ public class Params {
 
     @SerializedName("Fajr")
     @Expose
-    public Integer fajr;
+    private String fajr;
     @SerializedName("Isha")
     @Expose
-    public Integer isha;
+    private String isha;
 
 }

@@ -8,9 +8,9 @@ public class Weekday {
 
     @SerializedName("en")
     @Expose
-    public String en;
+    private String en;
     @SerializedName("ar")
     @Expose
-    public String ar;
+    private String ar;
 
 }

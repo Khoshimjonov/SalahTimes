@@ -8,27 +8,27 @@ public class Meta {
 
     @SerializedName("latitude")
     @Expose
-    public Float latitude;
+    private Float latitude;
     @SerializedName("longitude")
     @Expose
-    public Float longitude;
+    private Float longitude;
     @SerializedName("timezone")
     @Expose
-    public String timezone;
+    private String timezone;
     @SerializedName("method")
     @Expose
-    public Method method;
+    private Method method;
     @SerializedName("latitudeAdjustmentMethod")
     @Expose
-    public String latitudeAdjustmentMethod;
+    private String latitudeAdjustmentMethod;
     @SerializedName("midnightMode")
     @Expose
-    public String midnightMode;
+    private String midnightMode;
     @SerializedName("school")
     @Expose
-    public String school;
+    private String school;
     @SerializedName("offset")
     @Expose
-    public Offset offset;
+    private Offset offset;
 
 }

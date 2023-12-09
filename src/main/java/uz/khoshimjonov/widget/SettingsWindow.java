@@ -1,50 +1,64 @@
 package uz.khoshimjonov.widget;
 
+import uz.khoshimjonov.api.Api;
 import uz.khoshimjonov.dto.MethodEnum;
+import uz.khoshimjonov.dto.NominatimResponse;
 import uz.khoshimjonov.service.ConfigurationManager;
+import uz.khoshimjonov.service.LanguageHelper;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
 import java.awt.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class SettingsWindow extends JFrame {
 
     private final ConfigurationManager configManager;
+    private final Api api = new Api();
 
     private final JRadioButton shafiRadioButton;
     private final JRadioButton hanafiRadioButton;
+    private final JTextField addressTextField;
+    private final JLabel addressLabel;
     private final JTextField latitudeTextField;
     private final JTextField longitudeTextField;
     private final JComboBox<String> methodComboBox;
+    private final JComboBox<String> languageComboBox;
     private final JFormattedTextField updateIntervalField;
     private final JFormattedTextField notificationBeforeField;
     private final JCheckBox notificationsCheckBox;
     private final JCheckBox lookAndFeelCheckBox;
     private final JCheckBox draggableCheckBox;
     private final JCheckBox alwaysOnTopCheckBox;
-    private final JCheckBox autostartCheckBox;
 
     public SettingsWindow() {
         this.configManager = ConfigurationManager.getInstance();
 
-        setTitle("Widget App Settings");
+        setTitle(LanguageHelper.getText("settingsTitle"));
         setSize(400, 300);
+        try {
+            setIconImage(ImageIO.read(Objects.requireNonNull(getClass().getResource("/images/main.png"))));
+        } catch (Exception ignored) {}
         setResizable(false);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationByPlatform(true);
         setLocationRelativeTo(null);
 
-        // Combo Box
         List<String> methodNames = Arrays.stream(MethodEnum.values()).map(MethodEnum::getTitle).toList();
         String[] methodNamesArray = methodNames.toArray(new String[0]);
+        String[] localesArray = LanguageHelper.getAvailableLocales();
 
         methodComboBox = new JComboBox<>(methodNamesArray);
+        languageComboBox = new JComboBox<>(localesArray);
 
-        shafiRadioButton = new JRadioButton("Shafi (standard)");
-        hanafiRadioButton = new JRadioButton("Hanafi");
+        shafiRadioButton = new JRadioButton(LanguageHelper.getText("shafiTitle"));
+        hanafiRadioButton = new JRadioButton(LanguageHelper.getText("hanafiTitle"));
 
         ButtonGroup buttonGroup = new ButtonGroup();
         buttonGroup.add(shafiRadioButton);
@@ -56,6 +70,14 @@ public class SettingsWindow extends JFrame {
 
         latitudeTextField = new JTextField(25);
         longitudeTextField = new JTextField(25);
+        addressTextField = new JTextField(25);
+        addressLabel = new JLabel(LanguageHelper.getText("addressLabelTitle"));
+        JButton submitAddressButton = new JButton(LanguageHelper.getText("applyAddressTitle"));
+        submitAddressButton.addActionListener(e -> fetchLatLongFromAddress());
+
+        JPanel addressPanel = new JPanel();
+        addressPanel.add(addressTextField);
+        addressPanel.add(submitAddressButton);
 
         NumberFormat format = NumberFormat.getInstance();
         NumberFormatter formatter = new NumberFormatter(format);
@@ -72,51 +94,53 @@ public class SettingsWindow extends JFrame {
         notificationBeforeField.setValue(30);
         notificationBeforeField.setPreferredSize(new Dimension(100, updateIntervalField.getPreferredSize().height));
 
-        // Check Boxes
-        notificationsCheckBox = new JCheckBox("Enable notifications");
-        notificationsCheckBox.setSelected(true);
-        lookAndFeelCheckBox = new JCheckBox("Enable Look and Feel (Restart required)");
-        lookAndFeelCheckBox.setSelected(true);
-        draggableCheckBox = new JCheckBox("Draggable (Restart required)");
-        draggableCheckBox.setSelected(true);
-        alwaysOnTopCheckBox = new JCheckBox("Always on top");
-        alwaysOnTopCheckBox.setSelected(true);
-        autostartCheckBox = new JCheckBox("Autostart");
+        notificationsCheckBox = new JCheckBox(LanguageHelper.getText("notificationsTitle"));
+        lookAndFeelCheckBox = new JCheckBox(LanguageHelper.getText("lookAndFeelTitle"));
+        draggableCheckBox = new JCheckBox(LanguageHelper.getText("draggableTitle"));
+        alwaysOnTopCheckBox = new JCheckBox(LanguageHelper.getText("alwaysOnTopTitle"));
 
 
-        JPanel checkBoxPanel = new JPanel();
-        checkBoxPanel.add(notificationsCheckBox);
-        checkBoxPanel.add(lookAndFeelCheckBox);
-        checkBoxPanel.add(draggableCheckBox);
-        checkBoxPanel.add(alwaysOnTopCheckBox);
-        checkBoxPanel.add(autostartCheckBox);
+        JPanel checkBoxPanel1 = new JPanel();
+        JPanel checkBoxPanel2 = new JPanel();
+        checkBoxPanel1.add(lookAndFeelCheckBox);
+        checkBoxPanel1.add(draggableCheckBox);
+        checkBoxPanel2.add(notificationsCheckBox);
+        checkBoxPanel2.add(alwaysOnTopCheckBox);
 
-        // Buttons
-        JButton submitButton = new JButton("Submit");
+        JButton submitButton = new JButton(LanguageHelper.getText("saveTitle"));
         submitButton.addActionListener(e -> saveSettings());
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(submitButton);
 
-        // Grid Panel
+        int order = 0;
         JPanel northGridPanel = new JPanel();
         northGridPanel.setLayout(new GridBagLayout());
-        northGridPanel.add(new JLabel("Latitude:"), getConstraints(0, 0));
-        northGridPanel.add(latitudeTextField, getConstraints(1, 0));
-        northGridPanel.add(new JLabel("Longitude:"), getConstraints(0, 1));
-        northGridPanel.add(longitudeTextField, getConstraints(1, 1));
-        northGridPanel.add(new JLabel("Method:"), getConstraints(0, 2));
-        northGridPanel.add(methodComboBox, getConstraints(1, 2));
-        northGridPanel.add(new JLabel("School:"), getConstraints(0, 3));
-        northGridPanel.add(schoolRadioButtonPanel, getConstraints(1, 3));
-        northGridPanel.add(new JLabel("Update interval (seconds, restart required):"), getConstraints(0, 5));
-        northGridPanel.add(updateIntervalField, getConstraints(1, 5));
-        northGridPanel.add(new JLabel("Notification before (minutes):"), getConstraints(0, 6));
-        northGridPanel.add(notificationBeforeField, getConstraints(1, 6));
 
-        northGridPanel.add(checkBoxPanel, getConstraints(0, 8, 2));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("warning1")), getConstraints(0, order++));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("warning2")), getConstraints(0, order++));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("warning3")), getConstraints(0, order++));
+        northGridPanel.add(new JSeparator(), getConstraints(0, order++, 15));
 
-        // Construct the frame
+        northGridPanel.add(new JLabel(LanguageHelper.getText("addressTitle")), getConstraints(0, order++));
+        northGridPanel.add(addressPanel, getConstraints(0, order++, 5));
+        northGridPanel.add(addressLabel, getConstraints(0, order++, 15));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("latitudeTitle")), getConstraints(0, order++));
+        northGridPanel.add(latitudeTextField, getConstraints(0, order++, 15));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("longitudeTitle")), getConstraints(0, order++));
+        northGridPanel.add(longitudeTextField, getConstraints(0, order++, 15));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("methodTitle")), getConstraints(0, order++));
+        northGridPanel.add(methodComboBox, getConstraints(0, order++, 15));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("languageTitle")), getConstraints(0, order++));
+        northGridPanel.add(languageComboBox, getConstraints(0, order++, 15));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("schoolTitle")), getConstraints(0, order++));
+        northGridPanel.add(schoolRadioButtonPanel, getConstraints(0, order++, 15));
+        northGridPanel.add(new JLabel(LanguageHelper.getText("updateIntervalTitle")), getConstraints(0, order++));
+        northGridPanel.add(updateIntervalField, getConstraints(0, order++, 15));
+
+        northGridPanel.add(checkBoxPanel1, getConstraints(0, order++));
+        northGridPanel.add(checkBoxPanel2, getConstraints(0, order++));
+
         add(northGridPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
         pack();
@@ -126,10 +150,28 @@ public class SettingsWindow extends JFrame {
         loadConfigValues();
     }
 
+    private void fetchLatLongFromAddress() {
+        try {
+            String address = URLEncoder.encode(addressTextField.getText(), StandardCharsets.UTF_8);
+            List<NominatimResponse> positionByAddress = api.getPositionByAddress(address);
+            if (positionByAddress == null || positionByAddress.isEmpty()) {
+                return;
+            }
+            NominatimResponse response = positionByAddress.getFirst();
+            latitudeTextField.setText(response.getLat());
+            longitudeTextField.setText(response.getLon());
+            addressLabel.setText(LanguageHelper.getText("addressLabelTitle") + response.getDisplayName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     private void loadConfigValues() {
         latitudeTextField.setText(String.valueOf(configManager.getLatitude()));
         longitudeTextField.setText(String.valueOf(configManager.getLongitude()));
         methodComboBox.setSelectedItem(MethodEnum.getMethodByCode(configManager.getMethod()).getTitle());
+        languageComboBox.setSelectedItem(configManager.getUserLanguage());
         int school = configManager.getSchool();
         shafiRadioButton.setSelected(school == 0);
         hanafiRadioButton.setSelected(school == 1);
@@ -139,43 +181,36 @@ public class SettingsWindow extends JFrame {
         lookAndFeelCheckBox.setSelected(configManager.getLookAndFeelEnabled());
         draggableCheckBox.setSelected(configManager.isDraggable());
         alwaysOnTopCheckBox.setSelected(configManager.isAlwaysOnTop());
-        autostartCheckBox.setSelected(configManager.isAutostart());
     }
 
     private void saveSettings() {
         configManager.setLatitude(Double.parseDouble(latitudeTextField.getText()));
         configManager.setLongitude(Double.parseDouble(longitudeTextField.getText()));
         configManager.setMethod((MethodEnum.getMethodByName((String) methodComboBox.getSelectedItem()).getCode()));
+        configManager.setUserLanguage(String.valueOf(languageComboBox.getSelectedItem()));
         int school = shafiRadioButton.isSelected() ? 0 : 1;
         configManager.setSchool(school);
         configManager.setLookAndFeelEnabled(lookAndFeelCheckBox.isSelected());
         configManager.setDraggable(draggableCheckBox.isSelected());
         configManager.setAlwaysOnTop(alwaysOnTopCheckBox.isSelected());
         configManager.setUpdateDelay(Integer.parseInt(updateIntervalField.getText()));
-        configManager.setAutostart(autostartCheckBox.isSelected());
         configManager.setNotification(notificationsCheckBox.isSelected());
         configManager.setNotificationBeforeMinutes(Integer.parseInt(notificationBeforeField.getText()));
+        LanguageHelper.setLocale(String.valueOf(languageComboBox.getSelectedItem()));
         dispose();
     }
 
     private GridBagConstraints getConstraints(int x, int y) {
-        return getConstraints(x, y, 1);
+        return getConstraints(x, y, 2);
     }
 
-    private GridBagConstraints getConstraints(int x, int y, int width) {
+    private GridBagConstraints getConstraints(int x, int y, int bottomPadding) {
         GridBagConstraints c = new GridBagConstraints();
         c.anchor = GridBagConstraints.LINE_START;
-        c.insets = new Insets(5, 10, 10, 10);
+        c.insets = new Insets(2, 10, bottomPadding, 10);
         c.gridx = x;
         c.gridy = y;
-        c.gridwidth = width;
+        c.gridwidth = 1;
         return c;
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            SettingsWindow settingsWindow = new SettingsWindow();
-            settingsWindow.setVisible(true);
-        });
     }
 }
