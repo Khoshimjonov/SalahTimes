@@ -1,7 +1,10 @@
 package uz.khoshimjonov.service;
 
-import java.io.File;
-import java.util.*;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.ResourceBundle;
+import java.util.Set;
 
 public class LanguageHelper {
     private static final String BASE_NAME = "messages";
@@ -20,23 +23,24 @@ public class LanguageHelper {
     }
 
     public static String[] getAvailableLocales() {
-        String resourcesRoot = Objects.requireNonNull(LanguageHelper.class.getClassLoader().getResource("")).getPath();
         Locale[] availableLocales = Locale.getAvailableLocales();
         Set<String> locales = new HashSet<>();
         for (Locale availableLocale : availableLocales) {
             String language = availableLocale.getLanguage();
-            if (!language.trim().isEmpty() && propertiesFileExists(resourcesRoot, language)) {
+            if (!language.trim().isEmpty() && propertiesFileExists(language)) {
                 locales.add(language);
             }
         }
         return locales.toArray(new String[0]);
     }
 
-    private static boolean propertiesFileExists(String resourcesRoot, String languageCode) {
-        String fileName = "messages_" + languageCode + ".properties";
-        String filePath = resourcesRoot + fileName;
-        File file = new File(filePath);
-        return file.exists();
+    private static boolean propertiesFileExists(String languageCode) {
+        String fileName = "/messages_" + languageCode + ".properties";
+        try (InputStream in = LanguageHelper.class.getResourceAsStream(fileName)) {
+            return in != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 

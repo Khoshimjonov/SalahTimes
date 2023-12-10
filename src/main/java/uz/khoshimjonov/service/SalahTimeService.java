@@ -59,7 +59,7 @@ public class SalahTimeService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new WidgetTextDto(("cantGetTitle"), "", new Color(185, 73, 58));
+        return new WidgetTextDto(LanguageHelper.getText("cantGetTitle"), "", new Color(185, 73, 58));
     }
 
     private void getTimingsIfNeeded(TrayIcon trayIcon) throws Exception {
