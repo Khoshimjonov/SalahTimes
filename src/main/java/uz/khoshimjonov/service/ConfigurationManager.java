@@ -67,12 +67,30 @@ public class ConfigurationManager {
         saveConfig();
     }
 
+    public double getElevation() {
+        return Double.parseDouble(properties.getProperty("elevation", "0.0"));
+    }
+
+    public void setElevation(double longitude) {
+        properties.setProperty("elevation", String.valueOf(longitude));
+        saveConfig();
+    }
+
     public boolean getLookAndFeelEnabled() {
         return Boolean.parseBoolean(properties.getProperty("lookAndFeelEnabled", "true"));
     }
 
     public void setLookAndFeelEnabled(boolean lookAndFeelEnabled) {
         properties.setProperty("lookAndFeelEnabled", String.valueOf(lookAndFeelEnabled));
+        saveConfig();
+    }
+
+    public boolean getUseApi() {
+        return Boolean.parseBoolean(properties.getProperty("useApi", "false"));
+    }
+
+    public void setUseApi(boolean useApi) {
+        properties.setProperty("useApi", String.valueOf(useApi));
         saveConfig();
     }
 

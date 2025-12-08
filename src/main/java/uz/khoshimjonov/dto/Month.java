@@ -3,7 +3,9 @@ package uz.khoshimjonov.dto;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import lombok.Setter;
 
+@Setter
 public class Month {
 
     @SerializedName("number")

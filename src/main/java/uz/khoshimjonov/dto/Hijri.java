@@ -3,9 +3,11 @@ package uz.khoshimjonov.dto;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import lombok.Setter;
 
 import java.util.List;
 
+@Setter
 public class Hijri {
 
     @SerializedName("date")

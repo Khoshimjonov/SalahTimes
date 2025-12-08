@@ -1,15 +1,13 @@
 package uz.khoshimjonov.service;
 
 import uz.khoshimjonov.api.Api;
-import uz.khoshimjonov.dto.Hijri;
-import uz.khoshimjonov.dto.PrayerTimesResponse;
-import uz.khoshimjonov.dto.Timings;
-import uz.khoshimjonov.dto.WidgetTextDto;
+import uz.khoshimjonov.dto.*;
 
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -68,8 +66,8 @@ public class SalahTimeService {
             currentDate = realDate;
             timings.clear();
 
-            PrayerTimesResponse prayerTimes = api.getSalahTimes(currentDate.format(formatter), configurationManager.getSchool(), configurationManager.getMethod(), String.valueOf(configurationManager.getLatitude()), String.valueOf(configurationManager.getLongitude()));
-            PrayerTimesResponse tomorrowPrayerTimes = api.getSalahTimes(currentDate.plusDays(1).format(formatter), configurationManager.getSchool(), configurationManager.getMethod(), String.valueOf(configurationManager.getLatitude()), String.valueOf(configurationManager.getLongitude()));
+            PrayerTimesResponse prayerTimes = getPrayerTimes(currentDate, configurationManager.getSchool(), configurationManager.getMethod(), configurationManager.getLatitude(), configurationManager.getLongitude(),  configurationManager.getElevation());
+            PrayerTimesResponse tomorrowPrayerTimes = getPrayerTimes(currentDate.plusDays(1), configurationManager.getSchool(), configurationManager.getMethod(), configurationManager.getLatitude(), configurationManager.getLongitude(),  configurationManager.getElevation());
             if (prayerTimes == null || tomorrowPrayerTimes == null){
                 throw new RuntimeException();
             }
@@ -102,5 +100,34 @@ public class SalahTimeService {
         long seconds = remaining % 60;
         Color color = remaining > 1800 ? Color.WHITE : new Color(185, 73, 58);
         return new WidgetTextDto(String.format(title("widgetTextTitle"), Salah, time), String.format(title("remainingTitle"), hours, minutes, seconds), color);
+    }
+
+    private PrayerTimesResponse getPrayerTimes(LocalDate date, int school, int method, double latitude, double longitude, double elevation) throws Exception {
+        boolean useApi = configurationManager.getUseApi();
+        if (useApi) {
+            return api.getSalahTimes(date.format(formatter), school, method, String.valueOf(latitude), String.valueOf(longitude));
+        } else {
+            SalahTimesCalculator.Coordinates tashkent = new SalahTimesCalculator.Coordinates(latitude, longitude, elevation, ZoneId.systemDefault());
+            SalahTimesCalculator.CalculationMethod calculationMethod = SalahTimesCalculator.CalculationMethod.getByCode(method);
+            SalahTimesCalculator.AsrMethod methodOfAsr = SalahTimesCalculator.AsrMethod.getByCode(school);
+            SalahTimesCalculator calculations = new SalahTimesCalculator(tashkent, calculationMethod, methodOfAsr);
+            HijriDate hijriDate = new HijriDate(date.getYear(), date.getMonthValue(), date.getDayOfMonth());
+
+            Timings timings = Timings.fromCalculation(calculations.calculate(date));
+            Hijri hijriDateDto = new Hijri();
+            Month month = new Month();
+            month.setEn(hijriDate.getMonthName());
+            hijriDateDto.setYear(String.valueOf(hijriDate.getYear()));
+            hijriDateDto.setDay(String.valueOf(hijriDate.getDay()));
+            hijriDateDto.setMonth(month);
+            Date dateDto = new Date();
+            dateDto.setHijri(hijriDateDto);
+            Data data = new Data();
+            data.setTimings(timings);
+            data.setDate(dateDto);
+            PrayerTimesResponse prayerTimesResponse = new PrayerTimesResponse();
+            prayerTimesResponse.setData(data);
+            return prayerTimesResponse;
+        }
     }
 }

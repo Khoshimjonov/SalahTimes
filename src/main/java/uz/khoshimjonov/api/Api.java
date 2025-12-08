@@ -11,11 +11,17 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Api {
     private static final String AL_ADHAN_URL = "https://api.aladhan.com/v1/timings/%s?school=%s&method=%s&latitude=%s&longitude=%s";
     private static final String NOMINATIM_URL = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=%s";
+    private static final String OPEN_ELEVATION_URL = "https://api.open-elevation.com/api/v1/lookup";
     private final Gson GSON = new Gson();
 
 
@@ -26,6 +32,15 @@ public class Api {
     public List<NominatimResponse> getPositionByAddress(String address) throws Exception {
         Type listType = TypeToken.getParameterized(List.class, NominatimResponse.class).getType();
         return sendRequest(String.format(NOMINATIM_URL, address), listType);
+    }
+
+    public double lookupElevation(double lat, double lon) throws Exception {
+        String url = OPEN_ELEVATION_URL + "?locations=" + lat + "," + lon;
+
+        Map<String, ArrayList<Map<String, Double>>> response = sendRequest(url, Map.class);
+        if (response == null || Objects.requireNonNull(response.get("results")).isEmpty()) return 0;
+        Double elevationValue = response.get("results").getFirst().get("elevation");
+        return Double.isNaN(elevationValue) ? 0 : elevationValue;
     }
 
     private <T> T sendRequest(String url, Type type) throws Exception {
@@ -58,8 +73,8 @@ public class Api {
 
         HttpURLConnection connection = (HttpURLConnection) new URI(url).toURL().openConnection();
         connection.setRequestMethod("GET");
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
 
         int responseCode = connection.getResponseCode();
         if (responseCode == HttpURLConnection.HTTP_OK) {

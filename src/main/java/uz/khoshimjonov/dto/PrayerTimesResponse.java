@@ -14,4 +14,7 @@ public class PrayerTimesResponse {
         return data;
     }
 
+    public void setData(Data data) {
+        this.data = data;
+    }
 }

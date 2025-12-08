@@ -3,6 +3,9 @@ package uz.khoshimjonov.dto;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import uz.khoshimjonov.service.SalahTimesCalculator;
+
+import java.time.format.DateTimeFormatter;
 
 public class Timings {
 
@@ -82,5 +85,36 @@ public class Timings {
 
     public String getLastthird() {
         return lastthird;
+    }
+
+    public Timings(String imsak, String fajr, String sunrise, String dhuhr, String asr, String sunset, String maghrib, String isha, String midnight, String firstthird, String lastthird) {
+        this.imsak = imsak;
+        this.fajr = fajr;
+        this.sunrise = sunrise;
+        this.dhuhr = dhuhr;
+        this.asr = asr;
+        this.sunset = sunset;
+        this.maghrib = maghrib;
+        this.isha = isha;
+        this.midnight = midnight;
+        this.firstthird = firstthird;
+        this.lastthird = lastthird;
+    }
+
+    public Timings() {
+    }
+
+    public static Timings fromCalculation(SalahTimesCalculator.PrayerTimes prayerTimes) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm");
+        Timings timings = new Timings();
+        timings.imsak = prayerTimes.imsak.format(fmt);
+        timings.fajr = prayerTimes.fajr.format(fmt);
+        timings.sunrise = prayerTimes.sunrise.format(fmt);
+        timings.dhuhr = prayerTimes.dhuhr.format(fmt);
+        timings.asr = prayerTimes.asr.format(fmt);
+        timings.maghrib = prayerTimes.maghrib.format(fmt);
+        timings.isha = prayerTimes.isha.format(fmt);
+        timings.midnight = prayerTimes.midnight.format(fmt);
+        return timings;
     }
 }
