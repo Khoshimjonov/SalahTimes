@@ -32,7 +32,8 @@ public class SalahWidget {
     private final int POINT_X;
     private final int POINT_Y;
 
-    private boolean salahTimesWindowOpen = false;
+    private volatile long lastWindowCloseTime = 0;
+    private static final long DEBOUNCE_MS = 300;
 
     public SalahWidget() {
         try {
@@ -54,7 +55,7 @@ public class SalahWidget {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON1) {
-                        showSalahTimesWindow(e);
+                        showSalahTimesWindow();
                     }
                 }
             });
@@ -126,7 +127,7 @@ public class SalahWidget {
             PopupMenu popupMenu = new PopupMenu();
 
             MenuItem showTimesItem = new MenuItem(LanguageHelper.getText("showTimesTitle"));
-            showTimesItem.addActionListener(e -> showSalahTimesWindow(null));
+            showTimesItem.addActionListener(e -> showSalahTimesWindow());
             popupMenu.add(showTimesItem);
 
             popupMenu.addSeparator();
@@ -155,33 +156,26 @@ public class SalahWidget {
         settingsWindow.setVisible(true);
     }
 
-    private void showSalahTimesWindow(MouseEvent event) {
-        // Ensure timings are loaded before showing the window
+    private void showSalahTimesWindow() {
         try {
             salahTimeService.getWidgetText(trayIcon);
         } catch (Exception ignored) {}
 
-        if (salahTimesWindowOpen) {
-            // Window is open, close it
-            if (salahTimesWindow != null) {
-                salahTimesWindow.dispose();
-                salahTimesWindow = null;
-            }
-            salahTimesWindowOpen = false;
+        // Debounce: if window was closed very recently, this click caused it
+        if (System.currentTimeMillis() - lastWindowCloseTime < DEBOUNCE_MS) {
+            return;
+        }
+
+        if (salahTimesWindow != null && salahTimesWindow.isDisplayable()) {
+            salahTimesWindow.dispose();
+            salahTimesWindow = null;
         } else {
-            // Window is closed, open it
             salahTimesWindow = new SalahTimesWindow(
                     salahTimeService.getTimings(),
                     salahTimeService.getHijriDate(),
-                    this::onWindowClosed  // callback for when window closes
+                    () -> lastWindowCloseTime = System.currentTimeMillis()
             );
-            salahTimesWindowOpen = true;
         }
-    }
-
-    private void onWindowClosed() {
-        salahTimesWindowOpen = false;
-        salahTimesWindow = null;
     }
 
     private void cleanup() {

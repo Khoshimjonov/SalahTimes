@@ -19,17 +19,17 @@ import java.util.Map;
 public class SalahTimesWindow extends JDialog {
 
     private AWTEventListener outsideClickListener;
+    private final Runnable onCloseCallback;
+    private boolean isClosing = false;
 
-    private long disposedAt = 0;
-
-    public SalahTimesWindow(Map<String, LocalTime> timings, Hijri hijriDate) {
+    public SalahTimesWindow(Map<String, LocalTime> timings, Hijri hijriDate, Runnable onCloseCallback) {
+        this.onCloseCallback = onCloseCallback;
 
         setUndecorated(true);
         setMinimumSize(new Dimension(260, 360));
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         setAlwaysOnTop(true);
         toFront();
-        // Make focusable so we can detect focus loss (click outside) reliably
         setFocusableWindowState(true);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -92,7 +92,7 @@ public class SalahTimesWindow extends JDialog {
         settingsButton.addActionListener(e1 -> {
             SettingsWindow settingsWindow = new SettingsWindow();
             settingsWindow.setVisible(true);
-            setVisible(false);
+            closeWindow();
         });
 
         exitButton.addActionListener(e12 -> System.exit(0));
@@ -117,11 +117,26 @@ public class SalahTimesWindow extends JDialog {
         getContentPane().setBackground(new Color(32, 33, 36));
         getContentPane().add(mainPanel);
         setLocationRelativeTo(null);
-        // Pack BEFORE positioning so we know the final size
         pack();
         setPosition();
         installOutsideClickCloser();
         setVisible(true);
+    }
+
+    private void closeWindow() {
+        if (isClosing) return;
+        isClosing = true;
+
+        if (outsideClickListener != null) {
+            Toolkit.getDefaultToolkit().removeAWTEventListener(outsideClickListener);
+            outsideClickListener = null;
+        }
+
+        if (onCloseCallback != null) {
+            onCloseCallback.run();
+        }
+
+        dispose();
     }
 
     private void setPosition() {
@@ -130,20 +145,18 @@ public class SalahTimesWindow extends JDialog {
         Rectangle bounds = gc.getBounds();
         Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
 
-        int rightPadding = 5; // explicit right padding so window is not cropped
-        int bottomPadding = 5; // additional bottom padding to avoid tray overlap
+        int rightPadding = 5;
+        int bottomPadding = 5;
 
         int frameWidth = getWidth();
         int frameHeight = getHeight();
 
-        // Available area after excluding taskbar/dock insets
         int usableRight = bounds.x + bounds.width - insets.right;
         int usableBottom = bounds.y + bounds.height - insets.bottom;
 
         int newX = usableRight - frameWidth - rightPadding;
         int newY = usableBottom - frameHeight - bottomPadding;
 
-        // Safety clamps
         if (newX < bounds.x) newX = bounds.x + 10;
         if (newY < bounds.y) newY = bounds.y + 10;
 
@@ -159,8 +172,7 @@ public class SalahTimesWindow extends JDialog {
             try {
                 Point p = me.getLocationOnScreen();
                 if (!getBounds().contains(p)) {
-                    disposedAt = System.currentTimeMillis();
-                    dispose();
+                    closeWindow();
                 }
             } catch (Exception ignored) {}
         };
@@ -176,9 +188,7 @@ public class SalahTimesWindow extends JDialog {
             }
             @Override
             public void windowDeactivated(WindowEvent e) {
-                // If window loses focus due to clicking elsewhere, close it
-                disposedAt = System.currentTimeMillis();
-                dispose();
+                closeWindow();
             }
         });
     }
