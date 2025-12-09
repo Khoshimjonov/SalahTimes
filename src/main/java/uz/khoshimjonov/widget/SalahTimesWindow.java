@@ -19,6 +19,7 @@ import java.util.Map;
 public class SalahTimesWindow extends JDialog {
 
     private AWTEventListener outsideClickListener;
+    private WindowAdapter windowAdapter;
     private final Runnable onCloseCallback;
     private boolean isClosing = false;
 
@@ -123,20 +124,41 @@ public class SalahTimesWindow extends JDialog {
         setVisible(true);
     }
 
-    private void closeWindow() {
+    public void closeWindow() {
         if (isClosing) return;
         isClosing = true;
 
-        if (outsideClickListener != null) {
-            Toolkit.getDefaultToolkit().removeAWTEventListener(outsideClickListener);
-            outsideClickListener = null;
-        }
+        cleanup();
 
         if (onCloseCallback != null) {
-            onCloseCallback.run();
+            try {
+                onCloseCallback.run();
+            } catch (Exception ignored) {}
         }
 
         dispose();
+    }
+
+    private void cleanup() {
+        if (outsideClickListener != null) {
+            try {
+                Toolkit.getDefaultToolkit().removeAWTEventListener(outsideClickListener);
+            } catch (Exception ignored) {}
+            outsideClickListener = null;
+        }
+
+        if (windowAdapter != null) {
+            try {
+                removeWindowListener(windowAdapter);
+            } catch (Exception ignored) {}
+            windowAdapter = null;
+        }
+    }
+
+    @Override
+    public void dispose() {
+        cleanup();
+        super.dispose();
     }
 
     private void setPosition() {
@@ -169,6 +191,7 @@ public class SalahTimesWindow extends JDialog {
             MouseEvent me = (MouseEvent) event;
             if (me.getID() != MouseEvent.MOUSE_PRESSED) return;
             if (!isShowing()) return;
+
             try {
                 Point p = me.getLocationOnScreen();
                 if (!getBounds().contains(p)) {
@@ -176,20 +199,19 @@ public class SalahTimesWindow extends JDialog {
                 }
             } catch (Exception ignored) {}
         };
-        Toolkit.getDefaultToolkit().addAWTEventListener(outsideClickListener, AWTEvent.MOUSE_EVENT_MASK);
 
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosed(WindowEvent e) {
-                if (outsideClickListener != null) {
-                    Toolkit.getDefaultToolkit().removeAWTEventListener(outsideClickListener);
-                    outsideClickListener = null;
-                }
-            }
+        Toolkit.getDefaultToolkit().addAWTEventListener(
+                outsideClickListener,
+                AWTEvent.MOUSE_EVENT_MASK
+        );
+
+        windowAdapter = new WindowAdapter() {
             @Override
             public void windowDeactivated(WindowEvent e) {
                 closeWindow();
             }
-        });
+        };
+
+        addWindowListener(windowAdapter);
     }
 }

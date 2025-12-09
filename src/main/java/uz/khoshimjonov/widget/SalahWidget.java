@@ -33,7 +33,7 @@ public class SalahWidget {
     private final int POINT_Y;
 
     private volatile long lastWindowCloseTime = 0;
-    private static final long DEBOUNCE_MS = 300;
+    private static final long DEBOUNCE_MS = 200;
 
     public SalahWidget() {
         try {
@@ -161,13 +161,15 @@ public class SalahWidget {
             salahTimeService.getWidgetText(trayIcon);
         } catch (Exception ignored) {}
 
-        // Debounce: if window was closed very recently, this click caused it
+        // Debounce: When user clicks outside the window to close it, and that click
+        // lands on the tray icon, both outsideClickListener and this method fire.
+        // Without this check, the window would close then immediately reopen.
         if (System.currentTimeMillis() - lastWindowCloseTime < DEBOUNCE_MS) {
             return;
         }
 
         if (salahTimesWindow != null && salahTimesWindow.isDisplayable()) {
-            salahTimesWindow.dispose();
+            salahTimesWindow.closeWindow();
             salahTimesWindow = null;
         } else {
             salahTimesWindow = new SalahTimesWindow(
