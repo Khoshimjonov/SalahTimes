@@ -188,4 +188,15 @@ public class ConfigurationManager {
             e.printStackTrace();
         }
     }
+
+    // region AutoStart
+    public boolean getAutoStart() {
+        return Boolean.parseBoolean(properties.getProperty("autoStart", "false"));
+    }
+
+    public void setAutoStart(boolean autoStart) {
+        properties.setProperty("autoStart", String.valueOf(autoStart));
+        saveConfig();
+    }
+    // endregion
 }

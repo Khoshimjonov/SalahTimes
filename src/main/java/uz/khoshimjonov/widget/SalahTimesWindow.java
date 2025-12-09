@@ -1,67 +1,93 @@
 package uz.khoshimjonov.widget;
 
+import lombok.Getter;
+import lombok.Setter;
 import uz.khoshimjonov.dto.Hijri;
 import uz.khoshimjonov.service.LanguageHelper;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.AWTEventListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.time.LocalTime;
 import java.util.Map;
 
+@Getter
+@Setter
 public class SalahTimesWindow extends JDialog {
 
-    public SalahTimesWindow(Map<String, LocalTime> timings, Hijri hijriDate, MouseEvent e) {
+    private AWTEventListener outsideClickListener;
 
-        if (timings.isEmpty()) {
-            return;
-        }
+    private long disposedAt = 0;
+
+    public SalahTimesWindow(Map<String, LocalTime> timings, Hijri hijriDate) {
 
         setUndecorated(true);
-        setMinimumSize(new Dimension(200, 340));
+        setMinimumSize(new Dimension(260, 360));
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         setAlwaysOnTop(true);
-        pack();
         toFront();
-        setFocusableWindowState(false);
+        // Make focusable so we can detect focus loss (click outside) reliably
+        setFocusableWindowState(true);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        mainPanel.setBackground(new Color(32, 33, 36));
 
         JPanel headerPanel = new JPanel();
-        JLabel timeLabel = new JLabel(hijriDate.getYear(), SwingConstants.CENTER);
-        JLabel dateLabel = new JLabel(hijriDate.getMonth().getEn() + " " + hijriDate.getDay(), SwingConstants.CENTER);
-        timeLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        dateLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        headerPanel.setOpaque(false);
+        JLabel timeLabel = new JLabel(hijriDate != null ? hijriDate.getYear() : "");
+        timeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        JLabel dateLabel = new JLabel(hijriDate != null ? (hijriDate.getMonth().getEn() + " " + hijriDate.getDay()) : LanguageHelper.getText("loadingTitle"));
+        dateLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        timeLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        dateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        timeLabel.setForeground(Color.WHITE);
+        dateLabel.setForeground(new Color(200, 200, 200));
         headerPanel.setLayout(new GridLayout(2, 1));
         headerPanel.add(timeLabel);
         headerPanel.add(dateLabel);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(6, 0, 10, 0));
 
         JPanel prayerTimesPanel = new JPanel(new GridBagLayout());
+        prayerTimesPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.insets = new Insets(6, 6, 6, 6);
 
-        int i = 0;
-        for (Map.Entry<String, LocalTime> entry : timings.entrySet()) {
-            gbc.gridx = 0;
-            gbc.gridy = i++;
-            JLabel nameLabel = new JLabel(entry.getKey(), SwingConstants.RIGHT);
-            nameLabel.setFont(nameLabel.getFont().deriveFont(18.0f));
-            prayerTimesPanel.add(nameLabel, gbc);
+        if (timings == null || timings.isEmpty()) {
+            JLabel loading = new JLabel(LanguageHelper.getText("loadingTitle"));
+            loading.setForeground(Color.WHITE);
+            loading.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+            prayerTimesPanel.add(loading);
+        } else {
+            int i = 0;
+            for (Map.Entry<String, LocalTime> entry : timings.entrySet()) {
+                gbc.gridx = 0;
+                gbc.gridy = i;
+                JLabel nameLabel = new JLabel(entry.getKey(), SwingConstants.RIGHT);
+                nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+                nameLabel.setForeground(new Color(210, 210, 210));
+                prayerTimesPanel.add(nameLabel, gbc);
 
-            gbc.gridx = 1;
-            JLabel timeValueLabel = new JLabel(String.valueOf(entry.getValue()), SwingConstants.LEFT);
-            timeValueLabel.setFont(timeValueLabel.getFont().deriveFont(18.0f));
-            prayerTimesPanel.add(timeValueLabel, gbc);
+                gbc.gridx = 1;
+                JLabel timeValueLabel = new JLabel(String.valueOf(entry.getValue()), SwingConstants.LEFT);
+                timeValueLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+                timeValueLabel.setForeground(Color.WHITE);
+                prayerTimesPanel.add(timeValueLabel, gbc);
+                i++;
+            }
         }
 
         JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);
         JButton settingsButton = new JButton(LanguageHelper.getText("settingsTitle"));
         JButton exitButton = new JButton(LanguageHelper.getText("exitTitle"));
 
-        settingsButton.setFont(settingsButton.getFont().deriveFont(16.0f));
-        exitButton.setFont(exitButton.getFont().deriveFont(16.0f));
+        settingsButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        exitButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         settingsButton.addActionListener(e1 -> {
             SettingsWindow settingsWindow = new SettingsWindow();
@@ -71,52 +97,89 @@ public class SalahTimesWindow extends JDialog {
 
         exitButton.addActionListener(e12 -> System.exit(0));
 
+        buttonPanel.setLayout(new GridLayout(1, 2, 8, 0));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         buttonPanel.add(settingsButton);
         buttonPanel.add(exitButton);
-        buttonPanel.setLayout(new GridLayout(2, 1));
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(prayerTimesPanel, BorderLayout.CENTER);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(new Color(45, 47, 51));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 70, 75)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        card.add(headerPanel, BorderLayout.NORTH);
+        card.add(prayerTimesPanel, BorderLayout.CENTER);
+        card.add(buttonPanel, BorderLayout.SOUTH);
 
+        mainPanel.add(card, BorderLayout.CENTER);
+
+        getContentPane().setBackground(new Color(32, 33, 36));
         getContentPane().add(mainPanel);
         setLocationRelativeTo(null);
-        setPosition(e);
+        // Pack BEFORE positioning so we know the final size
+        pack();
+        setPosition();
+        installOutsideClickCloser();
         setVisible(true);
-
     }
 
-    private void setPosition(MouseEvent e) {
+    private void setPosition() {
         GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        Rectangle bounds = gd.getDefaultConfiguration().getBounds();
+        GraphicsConfiguration gc = gd.getDefaultConfiguration();
+        Rectangle bounds = gc.getBounds();
+        Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
 
-        Point mouseClickPoint = e.getPoint();
+        int rightPadding = 5; // explicit right padding so window is not cropped
+        int bottomPadding = 5; // additional bottom padding to avoid tray overlap
 
         int frameWidth = getWidth();
         int frameHeight = getHeight();
 
-        int halfWidth = frameWidth / 2;
-        int padding = 20;
+        // Available area after excluding taskbar/dock insets
+        int usableRight = bounds.x + bounds.width - insets.right;
+        int usableBottom = bounds.y + bounds.height - insets.bottom;
 
-        int newX = mouseClickPoint.x - halfWidth;
-        int newY = mouseClickPoint.y + padding;
+        int newX = usableRight - frameWidth - rightPadding;
+        int newY = usableBottom - frameHeight - bottomPadding;
 
-        if (newX + frameWidth > bounds.width) {
-            newX = bounds.width - frameWidth - padding;
-        }
-        if (newY + frameHeight > bounds.height) {
-            newY = mouseClickPoint.y - frameHeight - padding;
-        }
-
-        if (newX < 0) {
-            newX = mouseClickPoint.x + padding;
-        }
-
-        if (newY < 0) {
-            newX = mouseClickPoint.y + padding;
-        }
+        // Safety clamps
+        if (newX < bounds.x) newX = bounds.x + 10;
+        if (newY < bounds.y) newY = bounds.y + 10;
 
         setLocation(newX, newY);
+    }
+
+    private void installOutsideClickCloser() {
+        outsideClickListener = event -> {
+            if (!(event instanceof MouseEvent)) return;
+            MouseEvent me = (MouseEvent) event;
+            if (me.getID() != MouseEvent.MOUSE_PRESSED) return;
+            if (!isShowing()) return;
+            try {
+                Point p = me.getLocationOnScreen();
+                if (!getBounds().contains(p)) {
+                    disposedAt = System.currentTimeMillis();
+                    dispose();
+                }
+            } catch (Exception ignored) {}
+        };
+        Toolkit.getDefaultToolkit().addAWTEventListener(outsideClickListener, AWTEvent.MOUSE_EVENT_MASK);
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                if (outsideClickListener != null) {
+                    Toolkit.getDefaultToolkit().removeAWTEventListener(outsideClickListener);
+                    outsideClickListener = null;
+                }
+            }
+            @Override
+            public void windowDeactivated(WindowEvent e) {
+                // If window loses focus due to clicking elsewhere, close it
+                disposedAt = System.currentTimeMillis();
+                dispose();
+            }
+        });
     }
 }

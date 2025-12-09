@@ -4,6 +4,7 @@ import uz.khoshimjonov.api.Api;
 import uz.khoshimjonov.dto.MethodEnum;
 import uz.khoshimjonov.dto.NominatimResponse;
 import uz.khoshimjonov.service.ConfigurationManager;
+import uz.khoshimjonov.service.AutoStartManager;
 import uz.khoshimjonov.service.LanguageHelper;
 
 import javax.imageio.ImageIO;
@@ -38,12 +39,13 @@ public class SettingsWindow extends JFrame {
     private final JCheckBox useApiCheckBox;
     private final JCheckBox draggableCheckBox;
     private final JCheckBox alwaysOnTopCheckBox;
+    private final JCheckBox autoStartCheckBox;
 
     public SettingsWindow() {
         this.configManager = ConfigurationManager.getInstance();
 
         setTitle(LanguageHelper.getText("settingsTitle"));
-        setSize(400, 300);
+        setSize(460, 340);
         try {
             setIconImage(ImageIO.read(Objects.requireNonNull(getClass().getResource("/images/main.png"))));
         } catch (Exception ignored) {}
@@ -83,17 +85,23 @@ public class SettingsWindow extends JFrame {
         addressPanel.add(submitAddressButton);
 
         NumberFormat format = NumberFormat.getInstance();
-        NumberFormatter formatter = new NumberFormatter(format);
-        formatter.setValueClass(Integer.class);
-        formatter.setMinimum(1);
-        formatter.setMaximum(1800);
-        formatter.setAllowsInvalid(false);
-        formatter.setCommitsOnValidEdit(true);
-        updateIntervalField = new JFormattedTextField(formatter);
+        NumberFormatter intervalFormatter = new NumberFormatter(format);
+        intervalFormatter.setValueClass(Integer.class);
+        intervalFormatter.setMinimum(1);
+        intervalFormatter.setMaximum(1800);
+        intervalFormatter.setAllowsInvalid(false);
+        intervalFormatter.setCommitsOnValidEdit(true);
+        updateIntervalField = new JFormattedTextField(intervalFormatter);
         updateIntervalField.setValue(1);
         updateIntervalField.setPreferredSize(new Dimension(100, updateIntervalField.getPreferredSize().height));
 
-        notificationBeforeField = new JFormattedTextField(formatter);
+        NumberFormatter beforeFormatter = new NumberFormatter(format);
+        beforeFormatter.setValueClass(Integer.class);
+        beforeFormatter.setMinimum(0);
+        beforeFormatter.setMaximum(180);
+        beforeFormatter.setAllowsInvalid(false);
+        beforeFormatter.setCommitsOnValidEdit(true);
+        notificationBeforeField = new JFormattedTextField(beforeFormatter);
         notificationBeforeField.setValue(30);
         notificationBeforeField.setPreferredSize(new Dimension(100, updateIntervalField.getPreferredSize().height));
 
@@ -106,11 +114,15 @@ public class SettingsWindow extends JFrame {
 
         JPanel checkBoxPanel1 = new JPanel();
         JPanel checkBoxPanel2 = new JPanel();
+        checkBoxPanel1.setOpaque(false);
+        checkBoxPanel2.setOpaque(false);
         checkBoxPanel1.add(lookAndFeelCheckBox);
         checkBoxPanel1.add(useApiCheckBox);
         checkBoxPanel1.add(draggableCheckBox);
         checkBoxPanel2.add(notificationsCheckBox);
         checkBoxPanel2.add(alwaysOnTopCheckBox);
+        autoStartCheckBox = new JCheckBox(LanguageHelper.getText("autoStartTitle"));
+        checkBoxPanel2.add(autoStartCheckBox);
 
         JButton submitButton = new JButton(LanguageHelper.getText("saveTitle"));
         submitButton.addActionListener(e -> saveSettings());
@@ -121,6 +133,7 @@ public class SettingsWindow extends JFrame {
         int order = 0;
         JPanel northGridPanel = new JPanel();
         northGridPanel.setLayout(new GridBagLayout());
+        northGridPanel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
         northGridPanel.add(new JLabel(LanguageHelper.getText("warning1")), getConstraints(0, order++));
         northGridPanel.add(new JLabel(LanguageHelper.getText("warning2")), getConstraints(0, order++));
@@ -143,7 +156,10 @@ public class SettingsWindow extends JFrame {
         northGridPanel.add(new JLabel(LanguageHelper.getText("schoolTitle")), getConstraints(0, order++));
         northGridPanel.add(schoolRadioButtonPanel, getConstraints(0, order++, 15));
         northGridPanel.add(new JLabel(LanguageHelper.getText("updateIntervalTitle")), getConstraints(0, order++));
-        northGridPanel.add(updateIntervalField, getConstraints(0, order++, 15));
+        northGridPanel.add(updateIntervalField, getConstraints(0, order++, 10));
+
+        northGridPanel.add(new JLabel(LanguageHelper.getText("notificationBeforeTitle")), getConstraints(0, order++));
+        northGridPanel.add(notificationBeforeField, getConstraints(0, order++, 15));
 
         northGridPanel.add(checkBoxPanel1, getConstraints(0, order++));
         northGridPanel.add(checkBoxPanel2, getConstraints(0, order++));
@@ -192,6 +208,7 @@ public class SettingsWindow extends JFrame {
         useApiCheckBox.setSelected(configManager.getUseApi());
         draggableCheckBox.setSelected(configManager.isDraggable());
         alwaysOnTopCheckBox.setSelected(configManager.isAlwaysOnTop());
+        autoStartCheckBox.setSelected(configManager.getAutoStart());
     }
 
     private void saveSettings() {
@@ -209,6 +226,14 @@ public class SettingsWindow extends JFrame {
         configManager.setUpdateDelay(Integer.parseInt(updateIntervalField.getText()));
         configManager.setNotification(notificationsCheckBox.isSelected());
         configManager.setNotificationBeforeMinutes(Integer.parseInt(notificationBeforeField.getText()));
+        boolean wantAutoStart = autoStartCheckBox.isSelected();
+        configManager.setAutoStart(wantAutoStart);
+        // Apply immediately
+        boolean ok = wantAutoStart ? AutoStartManager.enable() : AutoStartManager.disable();
+        if (!ok) {
+            JOptionPane.showMessageDialog(this, "Failed to update autostart setting. Please run as a standard user and try again.",
+                    "Autostart", JOptionPane.WARNING_MESSAGE);
+        }
         LanguageHelper.setLocale(String.valueOf(languageComboBox.getSelectedItem()));
         dispose();
     }

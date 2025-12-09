@@ -32,6 +32,8 @@ public class SalahWidget {
     private final int POINT_X;
     private final int POINT_Y;
 
+    private boolean salahTimesWindowOpen = false;
+
     public SalahWidget() {
         try {
             if (!SystemTray.isSupported()) {
@@ -123,6 +125,12 @@ public class SalahWidget {
 
             PopupMenu popupMenu = new PopupMenu();
 
+            MenuItem showTimesItem = new MenuItem(LanguageHelper.getText("showTimesTitle"));
+            showTimesItem.addActionListener(e -> showSalahTimesWindow(null));
+            popupMenu.add(showTimesItem);
+
+            popupMenu.addSeparator();
+
             MenuItem settingsItem = new MenuItem(LanguageHelper.getText("settingsTitle"));
             settingsItem.addActionListener(e -> showSettingsWindow());
             popupMenu.add(settingsItem);
@@ -148,12 +156,32 @@ public class SalahWidget {
     }
 
     private void showSalahTimesWindow(MouseEvent event) {
-        if (salahTimesWindow == null || !salahTimesWindow.isVisible()) {
-            salahTimesWindow = new SalahTimesWindow(salahTimeService.getTimings(), salahTimeService.getHijriDate(), event);
+        // Ensure timings are loaded before showing the window
+        try {
+            salahTimeService.getWidgetText(trayIcon);
+        } catch (Exception ignored) {}
+
+        if (salahTimesWindowOpen) {
+            // Window is open, close it
+            if (salahTimesWindow != null) {
+                salahTimesWindow.dispose();
+                salahTimesWindow = null;
+            }
+            salahTimesWindowOpen = false;
         } else {
-            salahTimesWindow.setVisible(false);
-            salahTimesWindow = null;
+            // Window is closed, open it
+            salahTimesWindow = new SalahTimesWindow(
+                    salahTimeService.getTimings(),
+                    salahTimeService.getHijriDate(),
+                    this::onWindowClosed  // callback for when window closes
+            );
+            salahTimesWindowOpen = true;
         }
+    }
+
+    private void onWindowClosed() {
+        salahTimesWindowOpen = false;
+        salahTimesWindow = null;
     }
 
     private void cleanup() {
@@ -168,6 +196,10 @@ public class SalahWidget {
                 e.printStackTrace();
             }
         }
+        // Also shutdown prayer notification scheduler
+        try {
+            uz.khoshimjonov.service.PrayerTimeScheduler.getInstance().shutdown();
+        } catch (Exception ignored) {}
     }
 
 }
