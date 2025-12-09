@@ -13,9 +13,13 @@ public class IslamicCalendar {
      * Represents a special Islamic day
      */
     public static class IslamicEvent {
-        private final String name;
+        private final String nameEn;
+        private final String nameRu;
+        private final String nameUz;
         private final String nameArabic;
-        private final String description;
+        private final String descriptionEn;
+        private final String descriptionRu;
+        private final String descriptionUz;
         private final HijriDate hijriDate;
         private final LocalDate gregorianDate;
         private final EventType type;
@@ -32,13 +36,18 @@ public class IslamicCalendar {
             HISTORICAL
         }
 
-        public IslamicEvent(String name, String nameArabic, String description,
+        public IslamicEvent(String nameEn, String nameRu, String nameUz, String nameArabic,
+                            String descriptionEn, String descriptionRu, String descriptionUz,
                             HijriDate hijriDate, EventType type,
                             boolean isFastingDay, boolean isFastingProhibited,
                             boolean isPublicHoliday) {
-            this.name = name;
+            this.nameEn = nameEn;
+            this.nameRu = nameRu;
+            this.nameUz = nameUz;
             this.nameArabic = nameArabic;
-            this.description = description;
+            this.descriptionEn = descriptionEn;
+            this.descriptionRu = descriptionRu;
+            this.descriptionUz = descriptionUz;
             this.hijriDate = hijriDate;
             this.gregorianDate = hijriDate.toGregorian();
             this.type = type;
@@ -47,10 +56,49 @@ public class IslamicCalendar {
             this.isPublicHoliday = isPublicHoliday;
         }
 
+        /**
+         * Get event name in specified language
+         * @param lang Language code: "en", "ru", "uz", or "ar"
+         * @return Event name in specified language, defaults to English if not found
+         */
+        public String getName(String lang) {
+            if (lang == null) {
+                return nameEn;
+            }
+            return switch (lang.toLowerCase()) {
+                case "ru" -> nameRu;
+                case "uz" -> nameUz;
+                case "ar", "arabic" -> nameArabic;
+                default -> nameEn;
+            };
+        }
+
+        /**
+         * Get event description in specified language
+         * @param lang Language code: "en", "ru", or "uz"
+         * @return Event description in specified language, defaults to English if not found
+         */
+        public String getDescription(String lang) {
+            if (lang == null) {
+                return descriptionEn;
+            }
+            return switch (lang.toLowerCase()) {
+                case "ru" -> descriptionRu;
+                case "uz" -> descriptionUz;
+                default -> descriptionEn;
+            };
+        }
+
         // Getters
-        public String getName() { return name; }
+        public String getName() { return nameEn; }
+        public String getNameEn() { return nameEn; }
+        public String getNameRu() { return nameRu; }
+        public String getNameUz() { return nameUz; }
         public String getNameArabic() { return nameArabic; }
-        public String getDescription() { return description; }
+        public String getDescription() { return descriptionEn; }
+        public String getDescriptionEn() { return descriptionEn; }
+        public String getDescriptionRu() { return descriptionRu; }
+        public String getDescriptionUz() { return descriptionUz; }
         public HijriDate getHijriDate() { return hijriDate; }
         public LocalDate getGregorianDate() { return gregorianDate; }
         public EventType getType() { return type; }
@@ -61,18 +109,23 @@ public class IslamicCalendar {
         @Override
         public String toString() {
             return String.format("%s - %s (%s)",
-                    gregorianDate, name, hijriDate);
+                    gregorianDate, nameEn, hijriDate);
         }
 
         public String toDetailedString() {
+            return toDetailedString("en");
+        }
+
+        public String toDetailedString(String lang) {
             StringBuilder sb = new StringBuilder();
-            sb.append(String.format("%-25s %s%n", "Event:", name));
+            sb.append(String.format("%-25s %s%n", "Event:", getName(lang)));
             sb.append(String.format("%-25s %s%n", "Arabic:", nameArabic));
             sb.append(String.format("%-25s %s%n", "Gregorian Date:", gregorianDate));
             sb.append(String.format("%-25s %s%n", "Hijri Date:", hijriDate));
             sb.append(String.format("%-25s %s%n", "Type:", type));
-            if (description != null && !description.isEmpty()) {
-                sb.append(String.format("%-25s %s%n", "Description:", description));
+            String desc = getDescription(lang);
+            if (desc != null && !desc.isEmpty()) {
+                sb.append(String.format("%-25s %s%n", "Description:", desc));
             }
             if (isFastingDay) {
                 sb.append(String.format("%-25s %s%n", "Fasting:", "Recommended"));
@@ -93,26 +146,22 @@ public class IslamicCalendar {
     public static List<IslamicEvent> getEventsForYear(int gregorianYear) {
         List<IslamicEvent> events = new ArrayList<>();
 
-        // Find which Hijri years overlap with this Gregorian year
         HijriDate startOfYear = HijriDate.fromGregorian(LocalDate.of(gregorianYear, 1, 1));
         HijriDate endOfYear = HijriDate.fromGregorian(LocalDate.of(gregorianYear, 12, 31));
 
         int startHijriYear = startOfYear.getYear();
         int endHijriYear = endOfYear.getYear();
 
-        // Get events for each Hijri year that overlaps
         for (int hijriYear = startHijriYear; hijriYear <= endHijriYear; hijriYear++) {
             List<IslamicEvent> yearEvents = getEventsForHijriYear(hijriYear);
 
             for (IslamicEvent event : yearEvents) {
-                // Only include events that fall within the Gregorian year
                 if (event.getGregorianDate().getYear() == gregorianYear) {
                     events.add(event);
                 }
             }
         }
 
-        // Sort by Gregorian date
         events.sort(Comparator.comparing(IslamicEvent::getGregorianDate));
 
         return events;
@@ -127,26 +176,25 @@ public class IslamicCalendar {
         // ===== MUHARRAM (Month 1) =====
         events.add(new IslamicEvent(
                 "Islamic New Year",
+                "Исламский Новый год",
+                "Islomiy Yangi yil",
                 "رأس السنة الهجرية",
                 "First day of the Islamic calendar year",
+                "Первый день исламского календарного года",
+                "Islomiy taqvim yilining birinchi kuni",
                 new HijriDate(hijriYear, 1, 1),
                 IslamicEvent.EventType.MONTH_START,
                 false, false, true
         ));
 
         events.add(new IslamicEvent(
-                "Tasu'a",
-                "تاسوعاء",
-                "9th of Muharram, recommended to fast with Ashura",
-                new HijriDate(hijriYear, 1, 9),
-                IslamicEvent.EventType.FASTING_DAY,
-                true, false, false
-        ));
-
-        events.add(new IslamicEvent(
                 "Day of Ashura",
+                "День Ашура",
+                "Ashuro kuni",
                 "يوم عاشوراء",
-                "10th of Muharram, commemorates Moses and the Exodus; martyrdom of Husayn ibn Ali",
+                "10th of Muharram",
+                "10-е Мухаррама",
+                "Muharramning 10-kuni",
                 new HijriDate(hijriYear, 1, 10),
                 IslamicEvent.EventType.BLESSED_DAY,
                 true, false, false
@@ -155,8 +203,12 @@ public class IslamicCalendar {
         // ===== SAFAR (Month 2) =====
         events.add(new IslamicEvent(
                 "Start of Safar",
+                "Начало месяца Сафар",
+                "Safar oyining boshlanishi",
                 "بداية شهر صفر",
                 "Beginning of the month of Safar",
+                "Начало месяца Сафар",
+                "Safar oyining boshlanishi",
                 new HijriDate(hijriYear, 2, 1),
                 IslamicEvent.EventType.MONTH_START,
                 false, false, false
@@ -165,8 +217,12 @@ public class IslamicCalendar {
         // ===== RABI' AL-AWWAL (Month 3) =====
         events.add(new IslamicEvent(
                 "Mawlid al-Nabi",
+                "Мавлид ан-Наби",
+                "Mavlud an-Nabiy",
                 "المولد النبوي الشريف",
                 "Birth of Prophet Muhammad ﷺ (12th Rabi' al-Awwal according to majority)",
+                "Рождение Пророка Мухаммада ﷺ (12-е Раби аль-Авваль по мнению большинства)",
+                "Payg'ambarimiz Muhammad ﷺ ning tug'ilgan kuni (ko'pchilik bo'yicha Rabiul-avvalning 12-kuni)",
                 new HijriDate(hijriYear, 3, 12),
                 IslamicEvent.EventType.BLESSED_DAY,
                 false, false, true
@@ -175,8 +231,12 @@ public class IslamicCalendar {
         // ===== RAJAB (Month 7) =====
         events.add(new IslamicEvent(
                 "Start of Rajab",
+                "Начало месяца Раджаб",
+                "Rajab oyining boshlanishi",
                 "بداية شهر رجب",
                 "Beginning of Rajab, one of the four sacred months",
+                "Начало Раджаба, одного из четырёх священных месяцев",
+                "Rajab oyining boshlanishi, to'rtta muqaddas oylardan biri",
                 new HijriDate(hijriYear, 7, 1),
                 IslamicEvent.EventType.MONTH_START,
                 false, false, false
@@ -184,8 +244,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Isra and Mi'raj",
+                "Исра и Мирадж",
+                "Isro va Me'roj",
                 "الإسراء والمعراج",
                 "Night Journey and Ascension of Prophet Muhammad ﷺ",
+                "Ночное путешествие и Вознесение Пророка Мухаммада ﷺ",
+                "Payg'ambarimiz Muhammad ﷺ ning tungi sayohati va Me'rojga ko'tarilishi",
                 new HijriDate(hijriYear, 7, 27),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 false, false, false
@@ -194,8 +258,12 @@ public class IslamicCalendar {
         // ===== SHA'BAN (Month 8) =====
         events.add(new IslamicEvent(
                 "Start of Sha'ban",
+                "Начало месяца Шаабан",
+                "Sha'bon oyining boshlanishi",
                 "بداية شهر شعبان",
                 "Beginning of Sha'ban",
+                "Начало месяца Шаабан",
+                "Sha'bon oyining boshlanishi",
                 new HijriDate(hijriYear, 8, 1),
                 IslamicEvent.EventType.MONTH_START,
                 false, false, false
@@ -203,8 +271,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Laylat al-Bara'at",
+                "Ночь Бараат",
+                "Baro'at kechasi",
                 "ليلة البراءة",
-                "Night of Forgiveness (15th Sha'ban)",
+                "Laylat al-Bara'at",
+                "Ночь Бараат",
+                "Baro'at kechasi",
                 new HijriDate(hijriYear, 8, 15),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 true, false, false
@@ -213,18 +285,25 @@ public class IslamicCalendar {
         // ===== RAMADAN (Month 9) =====
         events.add(new IslamicEvent(
                 "First day of Ramadan",
+                "Первый день Рамадана",
+                "Ramazonning birinchi kuni",
                 "أول يوم رمضان",
                 "Beginning of the month of fasting",
+                "Начало месяца поста",
+                "Ro'za oyi boshlanishi",
                 new HijriDate(hijriYear, 9, 1),
                 IslamicEvent.EventType.MONTH_START,
                 true, false, true
         ));
 
-        // Laylat al-Qadr - traditionally on odd nights of last 10 days
         events.add(new IslamicEvent(
                 "Laylat al-Qadr (21st night)",
+                "Ляйлят аль-Кадр (21-я ночь)",
+                "Qadr kechasi (21-kecha)",
                 "ليلة القدر",
                 "Night of Power - possible date",
+                "Ночь Предопределения - возможная дата",
+                "Qadr kechasi - ehtimoliy sana",
                 new HijriDate(hijriYear, 9, 21),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 true, false, false
@@ -232,8 +311,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Laylat al-Qadr (23rd night)",
+                "Ляйлят аль-Кадр (23-я ночь)",
+                "Qadr kechasi (23-kecha)",
                 "ليلة القدر",
                 "Night of Power - possible date",
+                "Ночь Предопределения - возможная дата",
+                "Qadr kechasi - ehtimoliy sana",
                 new HijriDate(hijriYear, 9, 23),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 true, false, false
@@ -241,8 +324,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Laylat al-Qadr (25th night)",
+                "Ляйлят аль-Кадр (25-я ночь)",
+                "Qadr kechasi (25-kecha)",
                 "ليلة القدر",
                 "Night of Power - possible date",
+                "Ночь Предопределения - возможная дата",
+                "Qadr kechasi - ehtimoliy sana",
                 new HijriDate(hijriYear, 9, 25),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 true, false, false
@@ -250,8 +337,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Laylat al-Qadr (27th night)",
+                "Ляйлят аль-Кадр (27-я ночь)",
+                "Qadr kechasi (27-kecha)",
                 "ليلة القدر",
                 "Night of Power - most commonly observed date",
+                "Ночь Предопределения - наиболее распространённая дата",
+                "Qadr kechasi - eng ko'p nishonlanadigan sana",
                 new HijriDate(hijriYear, 9, 27),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 true, false, false
@@ -259,8 +350,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Laylat al-Qadr (29th night)",
+                "Ляйлят аль-Кадр (29-я ночь)",
+                "Qadr kechasi (29-kecha)",
                 "ليلة القدر",
                 "Night of Power - possible date",
+                "Ночь Предопределения - возможная дата",
+                "Qadr kechasi - ehtimoliy sana",
                 new HijriDate(hijriYear, 9, 29),
                 IslamicEvent.EventType.HOLY_NIGHT,
                 true, false, false
@@ -269,8 +364,12 @@ public class IslamicCalendar {
         // ===== SHAWWAL (Month 10) =====
         events.add(new IslamicEvent(
                 "Eid al-Fitr",
+                "Ид аль-Фитр (Ураза-байрам)",
+                "Ramazon hayiti",
                 "عيد الفطر",
-                "Festival of Breaking the Fast",
+                "Eid al-Fitr",
+                "Ид аль-Фитр",
+                "Ramazon hayiti",
                 new HijriDate(hijriYear, 10, 1),
                 IslamicEvent.EventType.EID,
                 false, true, true
@@ -278,8 +377,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Eid al-Fitr (Day 2)",
+                "Ид аль-Фитр (День 2)",
+                "Ramazon hayiti (2-kun)",
                 "عيد الفطر - اليوم الثاني",
                 "Second day of Eid al-Fitr",
+                "Второй день Ид аль-Фитр",
+                "Ramazon hayitining ikkinchi kuni",
                 new HijriDate(hijriYear, 10, 2),
                 IslamicEvent.EventType.EID,
                 false, false, true
@@ -287,18 +390,25 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Eid al-Fitr (Day 3)",
+                "Ид аль-Фитр (День 3)",
+                "Ramazon hayiti (3-kun)",
                 "عيد الفطر - اليوم الثالث",
                 "Third day of Eid al-Fitr",
+                "Третий день Ид аль-Фитр",
+                "Ramazon hayitining uchinchi kuni",
                 new HijriDate(hijriYear, 10, 3),
                 IslamicEvent.EventType.EID,
                 false, false, true
         ));
 
-        // Six days of Shawwal fasting
         events.add(new IslamicEvent(
                 "Six Days of Shawwal Begin",
+                "Начало шести дней Шавваля",
+                "Shavvolning olti kunlik ro'zasi boshlanishi",
                 "صيام ستة أيام من شوال",
                 "Recommended to fast 6 days in Shawwal after Eid",
+                "Рекомендуется поститься 6 дней в Шаввале после Ида",
+                "Hayitdan keyin Shavvolda 6 kun ro'za tutish tavsiya etiladi",
                 new HijriDate(hijriYear, 10, 2),
                 IslamicEvent.EventType.FASTING_DAY,
                 true, false, false
@@ -307,8 +417,12 @@ public class IslamicCalendar {
         // ===== DHU AL-QI'DAH (Month 11) =====
         events.add(new IslamicEvent(
                 "Start of Dhu al-Qi'dah",
+                "Начало месяца Зуль-Каада",
+                "Zulqa'da oyining boshlanishi",
                 "بداية شهر ذو القعدة",
                 "Beginning of Dhu al-Qi'dah, one of the sacred months",
+                "Начало Зуль-Каада, одного из священных месяцев",
+                "Zulqa'da oyining boshlanishi, muqaddas oylardan biri",
                 new HijriDate(hijriYear, 11, 1),
                 IslamicEvent.EventType.MONTH_START,
                 false, false, false
@@ -317,36 +431,38 @@ public class IslamicCalendar {
         // ===== DHU AL-HIJJAH (Month 12) =====
         events.add(new IslamicEvent(
                 "Start of Dhu al-Hijjah",
+                "Начало месяца Зуль-Хиджа",
+                "Zulhijja oyining boshlanishi",
                 "بداية شهر ذو الحجة",
                 "Beginning of the month of Hajj, one of the sacred months",
+                "Начало месяца Хаджа, одного из священных месяцев",
+                "Haj oyi boshlanishi, muqaddas oylardan biri",
                 new HijriDate(hijriYear, 12, 1),
                 IslamicEvent.EventType.MONTH_START,
                 true, false, false
         ));
 
-        // First 10 days - blessed days
         events.add(new IslamicEvent(
                 "First 10 Days of Dhu al-Hijjah",
+                "Первые 10 дней Зуль-Хиджа",
+                "Zulhijjaning dastlabki 10 kuni",
                 "العشر الأوائل من ذي الحجة",
-                "Most blessed days of the year - recommended to fast (except Eid)",
+                "First 10 Days of Dhu al-Hijjah",
+                "Первые 10 дней Зуль-Хиджа",
+                "Zulhijjaning dastlabki 10 kuni",
                 new HijriDate(hijriYear, 12, 1),
-                IslamicEvent.EventType.BLESSED_DAY,
-                true, false, false
-        ));
-
-        events.add(new IslamicEvent(
-                "Day of Tarwiyah",
-                "يوم التروية",
-                "8th of Dhu al-Hijjah - pilgrims go to Mina",
-                new HijriDate(hijriYear, 12, 8),
                 IslamicEvent.EventType.BLESSED_DAY,
                 true, false, false
         ));
 
         events.add(new IslamicEvent(
                 "Day of Arafah",
+                "День Арафат",
+                "Arafa kuni",
                 "يوم عرفة",
                 "9th of Dhu al-Hijjah - most important day of Hajj",
+                "9-е Зуль-Хиджа - самый важный день Хаджа",
+                "Zulhijjaning 9-kuni - Hajning eng muhim kuni",
                 new HijriDate(hijriYear, 12, 9),
                 IslamicEvent.EventType.BLESSED_DAY,
                 true, false, false
@@ -354,8 +470,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Eid al-Adha",
+                "Ид аль-Адха (Курбан-байрам)",
+                "Qurbon hayiti",
                 "عيد الأضحى",
                 "Festival of Sacrifice",
+                "Праздник жертвоприношения",
+                "Qurbonlik bayrami",
                 new HijriDate(hijriYear, 12, 10),
                 IslamicEvent.EventType.EID,
                 false, true, true
@@ -363,8 +483,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Days of Tashreeq (Day 1)",
+                "Дни Ташрик (День 1)",
+                "Tashriq kunlari (1-kun)",
                 "أيام التشريق - اليوم الأول",
                 "11th of Dhu al-Hijjah - fasting prohibited",
+                "11-е Зуль-Хиджа - пост запрещён",
+                "Zulhijjaning 11-kuni - ro'za tutish taqiqlangan",
                 new HijriDate(hijriYear, 12, 11),
                 IslamicEvent.EventType.EID,
                 false, true, true
@@ -372,8 +496,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Days of Tashreeq (Day 2)",
+                "Дни Ташрик (День 2)",
+                "Tashriq kunlari (2-kun)",
                 "أيام التشريق - اليوم الثاني",
                 "12th of Dhu al-Hijjah - fasting prohibited",
+                "12-е Зуль-Хиджа - пост запрещён",
+                "Zulhijjaning 12-kuni - ro'za tutish taqiqlangan",
                 new HijriDate(hijriYear, 12, 12),
                 IslamicEvent.EventType.EID,
                 false, true, true
@@ -381,8 +509,12 @@ public class IslamicCalendar {
 
         events.add(new IslamicEvent(
                 "Days of Tashreeq (Day 3)",
+                "Дни Ташрик (День 3)",
+                "Tashriq kunlari (3-kun)",
                 "أيام التشريق - اليوم الثالث",
                 "13th of Dhu al-Hijjah - fasting prohibited",
+                "13-е Зуль-Хиджа - пост запрещён",
+                "Zulhijjaning 13-kuni - ro'za tutish taqiqlangan",
                 new HijriDate(hijriYear, 12, 13),
                 IslamicEvent.EventType.EID,
                 false, true, true
@@ -400,11 +532,11 @@ public class IslamicCalendar {
 
         for (IslamicEvent event : allEvents) {
             if (event.isPublicHoliday() ||
-                    event.getName().contains("Ashura") ||
-                    event.getName().contains("Mawlid") ||
-                    event.getName().contains("Isra") ||
-                    event.getName().contains("Arafah") ||
-                    (event.getName().contains("Laylat al-Qadr") && event.getName().contains("27th"))) {
+                    event.getNameEn().contains("Ashura") ||
+                    event.getNameEn().contains("Mawlid") ||
+                    event.getNameEn().contains("Isra") ||
+                    event.getNameEn().contains("Arafah") ||
+                    (event.getNameEn().contains("Laylat al-Qadr") && event.getNameEn().contains("27th"))) {
                 majorEvents.add(event);
             }
         }
@@ -437,11 +569,11 @@ public class IslamicCalendar {
         List<IslamicEvent> events = getEventsForYear(gregorianYear);
 
         for (IslamicEvent event : events) {
-            if (event.getName().equals("First day of Ramadan")) {
+            if (event.getNameEn().equals("First day of Ramadan")) {
                 dates.put("ramadanStart", event.getGregorianDate());
-                dates.put("ramadanEnd", event.getGregorianDate().plusDays(29)); // Could be 29 or 30 days
+                dates.put("ramadanEnd", event.getGregorianDate().plusDays(29));
             }
-            if (event.getName().equals("Eid al-Fitr")) {
+            if (event.getNameEn().equals("Eid al-Fitr")) {
                 dates.put("eidAlFitr", event.getGregorianDate());
             }
         }
@@ -458,13 +590,13 @@ public class IslamicCalendar {
         List<IslamicEvent> events = getEventsForYear(gregorianYear);
 
         for (IslamicEvent event : events) {
-            if (event.getName().equals("Day of Tarwiyah")) {
+            if (event.getNameEn().equals("Day of Tarwiyah")) {
                 dates.put("dayOfTarwiyah", event.getGregorianDate());
             }
-            if (event.getName().equals("Day of Arafah")) {
+            if (event.getNameEn().equals("Day of Arafah")) {
                 dates.put("dayOfArafah", event.getGregorianDate());
             }
-            if (event.getName().equals("Eid al-Adha")) {
+            if (event.getNameEn().equals("Eid al-Adha")) {
                 dates.put("eidAlAdha", event.getGregorianDate());
             }
         }
@@ -501,12 +633,10 @@ public class IslamicCalendar {
     public static List<IslamicEvent> getUpcomingEvents(LocalDate fromDate, int count) {
         List<IslamicEvent> upcoming = new ArrayList<>();
 
-        // Get events for current and next year
         List<IslamicEvent> events = new ArrayList<>();
         events.addAll(getEventsForYear(fromDate.getYear()));
         events.addAll(getEventsForYear(fromDate.getYear() + 1));
 
-        // Filter and sort
         for (IslamicEvent event : events) {
             if (!event.getGregorianDate().isBefore(fromDate)) {
                 upcoming.add(event);
@@ -515,7 +645,6 @@ public class IslamicCalendar {
 
         upcoming.sort(Comparator.comparing(IslamicEvent::getGregorianDate));
 
-        // Return only requested count
         if (upcoming.size() > count) {
             return upcoming.subList(0, count);
         }
@@ -527,6 +656,13 @@ public class IslamicCalendar {
      * Format events as a simple calendar string
      */
     public static String formatEventsAsCalendar(List<IslamicEvent> events) {
+        return formatEventsAsCalendar(events, "en");
+    }
+
+    /**
+     * Format events as a simple calendar string in specified language
+     */
+    public static String formatEventsAsCalendar(List<IslamicEvent> events, String lang) {
         StringBuilder sb = new StringBuilder();
 
         String currentMonth = "";
@@ -544,7 +680,7 @@ public class IslamicCalendar {
 
             sb.append(String.format("  %2d - %-30s (%s)\n",
                     event.getGregorianDate().getDayOfMonth(),
-                    event.getName(),
+                    event.getName(lang),
                     event.getHijriDate().toNumericString()
             ));
         }
@@ -561,28 +697,59 @@ public class IslamicCalendar {
 
         int year = 2026;
 
-        // Major events for 2025
-        System.out.println("=== MAJOR ISLAMIC EVENTS " + year + " ===\n");
+        // Demo with different languages
+        System.out.println("=== MAJOR ISLAMIC EVENTS " + year + " (English) ===\n");
         List<IslamicEvent> majorEvents = getMajorEventsForYear(year);
 
-        System.out.println(String.format("%-12s | %-30s | %-25s | %s",
-                "Date", "Event", "Hijri Date", "Type"));
-        System.out.println("-".repeat(95));
+        System.out.printf("%-12s | %-35s | %-25s | %s%n", "Date", "Event", "Hijri Date", "Type");
+        System.out.println("-".repeat(100));
 
         for (IslamicEvent event : majorEvents) {
-            System.out.println(String.format("%-12s | %-30s | %-25s | %s",
+            System.out.printf("%-12s | %-35s | %-25s | %s%n",
                     event.getGregorianDate(),
-                    event.getName(),
+                    event.getName("en"),
                     event.getHijriDate(),
                     event.getType()
-            ));
+            );
         }
         System.out.println();
 
-        // All events for 2025
-        System.out.println("=== ALL ISLAMIC EVENTS " + year + " ===\n");
+        System.out.println("=== MAJOR ISLAMIC EVENTS " + year + " (Russian) ===\n");
+        System.out.printf("%-12s | %-40s | %-25s%n", "Дата", "Событие", "Хиджра");
+        System.out.println("-".repeat(85));
+
+        for (IslamicEvent event : majorEvents) {
+            System.out.printf("%-12s | %-40s | %-25s%n",
+                    event.getGregorianDate(),
+                    event.getName("ru"),
+                    event.getHijriDate()
+            );
+        }
+        System.out.println();
+
+        System.out.println("=== MAJOR ISLAMIC EVENTS " + year + " (Uzbek) ===\n");
+        System.out.printf("%-12s | %-40s | %-25s%n", "Sana", "Voqea", "Hijriy");
+        System.out.println("-".repeat(85));
+
+        for (IslamicEvent event : majorEvents) {
+            System.out.printf("%-12s | %-40s | %-25s%n",
+                    event.getGregorianDate(),
+                    event.getName("uz"),
+                    event.getHijriDate()
+            );
+        }
+        System.out.println();
+
+        // All events calendar in different languages
+        System.out.println("=== ALL EVENTS CALENDAR (English) ===\n");
         List<IslamicEvent> allEvents = getEventsForYear(year);
-        System.out.println(formatEventsAsCalendar(allEvents));
+        System.out.println(formatEventsAsCalendar(allEvents, "en"));
+
+        System.out.println("=== ALL EVENTS CALENDAR (Russian) ===\n");
+        System.out.println(formatEventsAsCalendar(allEvents, "ru"));
+
+        System.out.println("=== ALL EVENTS CALENDAR (Uzbek) ===\n");
+        System.out.println(formatEventsAsCalendar(allEvents, "uz"));
 
         // Ramadan dates
         System.out.println("=== RAMADAN " + year + " ===");
@@ -602,21 +769,44 @@ public class IslamicCalendar {
 
         // Upcoming events
         System.out.println("=== NEXT 10 UPCOMING EVENTS ===\n");
-        LocalDate today = LocalDate.of(2025, 12, 8);
+        LocalDate today = LocalDate.of(2025, 12, 9);
         List<IslamicEvent> upcoming = getUpcomingEvents(today, 10);
 
+        System.out.println("English | Russian | Uzbek");
+        System.out.println("-".repeat(100));
         for (IslamicEvent event : upcoming) {
             long daysUntil = java.time.temporal.ChronoUnit.DAYS.between(today, event.getGregorianDate());
-            System.out.println(String.format("%s - %s (in %d days)",
-                    event.getGregorianDate(), event.getName(), daysUntil));
+            System.out.printf("%s - %s | %s | %s (in %d days)%n",
+                    event.getGregorianDate(),
+                    event.getName("en"),
+                    event.getName("ru"),
+                    event.getName("uz"),
+                    daysUntil
+            );
         }
         System.out.println();
 
-        // Detailed view of Eid al-Adha
-        System.out.println("=== DETAILED VIEW: EID AL-ADHA ===\n");
+        // Detailed view of Eid al-Adha in different languages
+        System.out.println("=== DETAILED VIEW: EID AL-ADHA (English) ===\n");
         for (IslamicEvent event : allEvents) {
-            if (event.getName().equals("Eid al-Adha")) {
-                System.out.println(event.toDetailedString());
+            if (event.getNameEn().equals("Eid al-Adha")) {
+                System.out.println(event.toDetailedString("en"));
+                break;
+            }
+        }
+
+        System.out.println("=== DETAILED VIEW: EID AL-ADHA (Russian) ===\n");
+        for (IslamicEvent event : allEvents) {
+            if (event.getNameEn().equals("Eid al-Adha")) {
+                System.out.println(event.toDetailedString("ru"));
+                break;
+            }
+        }
+
+        System.out.println("=== DETAILED VIEW: EID AL-ADHA (Uzbek) ===\n");
+        for (IslamicEvent event : allEvents) {
+            if (event.getNameEn().equals("Eid al-Adha")) {
+                System.out.println(event.toDetailedString("uz"));
                 break;
             }
         }
@@ -627,16 +817,22 @@ public class IslamicCalendar {
         List<IslamicEvent> dateEvents = getEventsForDate(checkDate);
         System.out.println("Events on " + checkDate + ":");
         for (IslamicEvent event : dateEvents) {
-            System.out.println("  - " + event.getName());
+            System.out.println("  - EN: " + event.getName("en"));
+            System.out.println("    RU: " + event.getName("ru"));
+            System.out.println("    UZ: " + event.getName("uz"));
         }
         System.out.println();
 
         // 2026 Preview
-        System.out.println("=== MAJOR EVENTS 2026 (Preview) ===\n");
+        System.out.println("=== MAJOR EVENTS 2026 (Preview - All Languages) ===\n");
         List<IslamicEvent> events2026 = getMajorEventsForYear(2026);
         for (IslamicEvent event : events2026) {
-            System.out.println(String.format("%s - %s",
-                    event.getGregorianDate(), event.getName()));
+            System.out.printf("%s:%n  EN: %s%n  RU: %s%n  UZ: %s%n%n",
+                    event.getGregorianDate(),
+                    event.getName("en"),
+                    event.getName("ru"),
+                    event.getName("uz")
+            );
         }
     }
 }

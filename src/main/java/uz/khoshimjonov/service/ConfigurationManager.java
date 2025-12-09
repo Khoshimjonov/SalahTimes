@@ -1,5 +1,7 @@
 package uz.khoshimjonov.service;
 
+import lombok.Getter;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +16,9 @@ public class ConfigurationManager {
     private static volatile ConfigurationManager instance;
 
     public boolean apiSettingsUpdated = true;
+
+    @Getter
+    private boolean configurationExists = true;
 
     private ConfigurationManager() {
         properties = new Properties();
@@ -46,6 +51,15 @@ public class ConfigurationManager {
 
     public void setMethod(int method) {
         properties.setProperty("method", String.valueOf(method));
+        saveConfig();
+    }
+
+    public String getAddress() {
+        return properties.getProperty("address", "");
+    }
+
+    public void setAddress(String address) {
+        properties.setProperty("address", address);
         saveConfig();
     }
 
@@ -170,6 +184,7 @@ public class ConfigurationManager {
         try {
             Path path = Path.of(CONFIG_FILE);
             if (!Files.exists(path)) {
+                configurationExists = false;
                 Files.createFile(path);
             }
             InputStream input = new FileInputStream(CONFIG_FILE);

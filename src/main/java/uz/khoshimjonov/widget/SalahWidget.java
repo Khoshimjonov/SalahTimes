@@ -145,7 +145,9 @@ public class SalahWidget {
             popupMenu.add(exitItem);
 
             trayIcon.setPopupMenu(popupMenu);
-            showSettingsWindow();
+            if (!configurationManager.isConfigurationExists()) {
+                showSettingsWindow();
+            }
         };
         SwingUtilities.invokeLater(runnable);
         Runtime.getRuntime().addShutdownHook(new Thread(this::cleanup));
@@ -174,7 +176,6 @@ public class SalahWidget {
         } else {
             salahTimesWindow = new SalahTimesWindow(
                     salahTimeService.getTimings(),
-                    salahTimeService.getHijriDate(),
                     () -> lastWindowCloseTime = System.currentTimeMillis()
             );
         }

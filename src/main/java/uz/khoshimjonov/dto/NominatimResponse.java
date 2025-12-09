@@ -10,7 +10,7 @@ import java.util.List;
 public class NominatimResponse implements Serializable {
     @SerializedName("place_id")
     @Expose
-    private Integer placeId;
+    private Long placeId;
     @SerializedName("licence")
     @Expose
     private String licence;
@@ -19,7 +19,7 @@ public class NominatimResponse implements Serializable {
     private String osmType;
     @SerializedName("osm_id")
     @Expose
-    private Integer osmId;
+    private Long osmId;
     @SerializedName("lat")
     @Expose
     private String lat;
@@ -34,7 +34,7 @@ public class NominatimResponse implements Serializable {
     private String type;
     @SerializedName("place_rank")
     @Expose
-    private Integer placeRank;
+    private Long placeRank;
     @SerializedName("importance")
     @Expose
     private Float importance;
@@ -53,11 +53,11 @@ public class NominatimResponse implements Serializable {
     @Serial
     private final static long serialVersionUID = 6484686324938436909L;
 
-    public Integer getPlaceId() {
+    public Long getPlaceId() {
         return placeId;
     }
 
-    public void setPlaceId(Integer placeId) {
+    public void setPlaceId(Long placeId) {
         this.placeId = placeId;
     }
 
@@ -77,11 +77,11 @@ public class NominatimResponse implements Serializable {
         this.osmType = osmType;
     }
 
-    public Integer getOsmId() {
+    public Long getOsmId() {
         return osmId;
     }
 
-    public void setOsmId(Integer osmId) {
+    public void setOsmId(Long osmId) {
         this.osmId = osmId;
     }
 
@@ -117,11 +117,11 @@ public class NominatimResponse implements Serializable {
         this.type = type;
     }
 
-    public Integer getPlaceRank() {
+    public Long getPlaceRank() {
         return placeRank;
     }
 
-    public void setPlaceRank(Integer placeRank) {
+    public void setPlaceRank(Long placeRank) {
         this.placeRank = placeRank;
     }
 

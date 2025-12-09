@@ -21,6 +21,20 @@ public class HijriDate {
             "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
     };
 
+    // Uzbek
+    public static final String[] HIJRI_MONTHS_UZ = {
+            "Muharram", "Safar", "Rabiul-avval", "Rabiul-oxir",
+            "Jumadil-avval", "Jumadil-oxir", "Rajab", "Sha'bon",
+            "Ramazon", "Shavvol", "Zulqa'da", "Zulhijja"
+    };
+
+    // Russian
+    public static final String[] HIJRI_MONTHS_RU = {
+            "Мухаррам", "Сафар", "Раби аль-авваль", "Раби ас-сани",
+            "Джумада аль-уля", "Джумада ас-сани", "Раджаб", "Шабан",
+            "Рамадан", "Шавваль", "Зуль-када", "Зуль-хиджа"
+    };
+
     private static final String[] HIJRI_MONTHS_ARABIC = {
             "مُحَرَّم", "صَفَر", "رَبِيع الأَوَّل", "رَبِيع الثَّانِي",
             "جُمَادَى الأُولَى", "جُمَادَى الآخِرَة", "رَجَب", "شَعْبَان",
@@ -467,6 +481,14 @@ public class HijriDate {
         if (month == 10 && day == 1) return true;
         if (month == 12 && day >= 10 && day <= 13) return true;
         return false;
+    }
+
+    public String getMonthName(String languageCode) {
+        return switch (languageCode.toLowerCase()) {
+            case "uz" -> HIJRI_MONTHS_UZ[month - 1];
+            case "ru" -> HIJRI_MONTHS_RU[month - 1];
+            default -> HIJRI_MONTHS[month - 1];
+        };
     }
 
     // ==================== MAIN (DEMO) ====================

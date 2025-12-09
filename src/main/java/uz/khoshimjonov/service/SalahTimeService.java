@@ -1,5 +1,6 @@
 package uz.khoshimjonov.service;
 
+import lombok.Getter;
 import uz.khoshimjonov.api.Api;
 import uz.khoshimjonov.dto.*;
 
@@ -13,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Getter
 public class SalahTimeService {
     private final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
     private final PrayerTimeScheduler prayerTimeScheduler = PrayerTimeScheduler.getInstance();
@@ -22,14 +24,6 @@ public class SalahTimeService {
     private LocalTime tomorrowFajr;
     private LocalDate currentDate;
     private Hijri hijriDate;
-
-    public Map<String, LocalTime> getTimings() {
-        return timings;
-    }
-
-    public Hijri getHijriDate() {
-        return hijriDate;
-    }
 
     public SalahTimeService() {
         api = new Api();
@@ -111,12 +105,12 @@ public class SalahTimeService {
             SalahTimesCalculator.CalculationMethod calculationMethod = SalahTimesCalculator.CalculationMethod.getByCode(method);
             SalahTimesCalculator.AsrMethod methodOfAsr = SalahTimesCalculator.AsrMethod.getByCode(school);
             SalahTimesCalculator calculations = new SalahTimesCalculator(tashkent, calculationMethod, methodOfAsr);
-            HijriDate hijriDate = new HijriDate(date.getYear(), date.getMonthValue(), date.getDayOfMonth());
+            HijriDate hijriDate = HijriDate.fromGregorian(date);
 
             Timings timings = Timings.fromCalculation(calculations.calculate(date));
             Hijri hijriDateDto = new Hijri();
             Month month = new Month();
-            month.setEn(hijriDate.getMonthName());
+            month.setEn(hijriDate.getMonthName(configurationManager.getUserLanguage()));
             hijriDateDto.setYear(String.valueOf(hijriDate.getYear()));
             hijriDateDto.setDay(String.valueOf(hijriDate.getDay()));
             hijriDateDto.setMonth(month);
