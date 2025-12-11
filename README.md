@@ -4,7 +4,7 @@
 
 **Important Warnings**:
   - **Prayer Times Depend on Settings**: Customize the app to get the correct times.
-  - **Compare with Nearby Mosques**: Compare the prayer times shown by the app with the times of nearby mosques.
+  - **Compare with Nearby Mosques**: Always compare the prayer times shown by the app with the times of nearby mosques.
 
 Salah Times is a Java Swing application that provides prayer times based on the user's location. It features a text widget with a transparent background, making it customizable and convenient for users. The app fetches prayer times from api.aladhan.com/v1/timings and uses nominatim.openstreetmap.org for obtaining latitude and longitude.
 
@@ -73,6 +73,7 @@ Everyone is welcome to contribute to the project.
 
 - Thanks to [api.aladhan.com](https://api.aladhan.com) for providing accurate prayer time data.
 - Thanks to [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org) for geocoding services.
+- Thanks to [api.open-elevation.com](https://api.open-elevation.com) for elevation data.
 
 ## Support
 
