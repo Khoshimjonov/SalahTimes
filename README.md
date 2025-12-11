@@ -35,7 +35,7 @@ Salah Times is a Java Swing application that provides prayer times based on the 
 ## Installation
 
 ### Prerequisites
-- Java (version 8 or later)
+- Java (if using the jar file)
 
 ### Download
 - Jar and exe files can be downloaded from the [releases page](https://github.com/Khoshimjonov/SalahTimes/releases).
