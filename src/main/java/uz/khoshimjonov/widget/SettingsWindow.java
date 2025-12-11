@@ -62,7 +62,8 @@ public class SettingsWindow extends JFrame {
     private JComboBox<String> languageComboBox;
     private JFormattedTextField updateIntervalField;
     private JFormattedTextField notificationBeforeField;
-    private JCheckBox notificationsCheckBox;
+    private JCheckBox notifyBeforeCheckBox;
+    private JCheckBox notifyOnTimeCheckBox;
     private JCheckBox lookAndFeelCheckBox;
     private JCheckBox useApiCheckBox;
     private JCheckBox draggableCheckBox;
@@ -378,10 +379,10 @@ public class SettingsWindow extends JFrame {
         content.add(sectionTitle);
         content.add(Box.createVerticalStrut(18));
 
-        notificationsCheckBox = createStyledCheckBox(LanguageHelper.getText("notificationsTitle"));
-        notificationsCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        content.add(notificationsCheckBox);
-        content.add(Box.createVerticalStrut(16));
+        notifyBeforeCheckBox = createStyledCheckBox(LanguageHelper.getText("notifyBeforeEnabledTitle"));
+        notifyBeforeCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(notifyBeforeCheckBox);
+        content.add(Box.createVerticalStrut(12));
 
         JLabel beforeLabel = createStyledLabel(LanguageHelper.getText("notificationBeforeTitle"), FONT_SIZE_SMALL, TEXT_SECONDARY, false);
         beforeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -414,6 +415,20 @@ public class SettingsWindow extends JFrame {
         beforeRow.add(Box.createHorizontalGlue());
 
         content.add(beforeRow);
+
+        content.add(Box.createVerticalStrut(16));
+
+        notifyOnTimeCheckBox = createStyledCheckBox(LanguageHelper.getText("notifyOnTimeTitle"));
+        notifyOnTimeCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(notifyOnTimeCheckBox);
+
+        // Bind enabling of minutes inputs to the toggle
+        notifyBeforeCheckBox.addActionListener(e -> {
+            boolean enabled = notifyBeforeCheckBox.isSelected();
+            notificationBeforeField.setEnabled(enabled);
+            beforeLabel.setEnabled(enabled);
+            minLabel.setEnabled(enabled);
+        });
 
         card.add(content, BorderLayout.CENTER);
         return card;
@@ -1165,12 +1180,19 @@ public class SettingsWindow extends JFrame {
         hanafiRadioButton.setSelected(school == 1);
         updateIntervalField.setText(String.valueOf(configManager.getUpdateDelay()));
         notificationBeforeField.setText(String.valueOf(configManager.getNotificationBeforeMinutes()));
-        notificationsCheckBox.setSelected(configManager.isNotification());
+        notifyBeforeCheckBox.setSelected(configManager.isNotifyBefore());
+        notifyOnTimeCheckBox.setSelected(configManager.isNotifyOnTime());
         lookAndFeelCheckBox.setSelected(configManager.getLookAndFeelEnabled());
         useApiCheckBox.setSelected(configManager.getUseApi());
         draggableCheckBox.setSelected(configManager.isDraggable());
         alwaysOnTopCheckBox.setSelected(configManager.isAlwaysOnTop());
         autoStartCheckBox.setSelected(configManager.getAutoStart());
+
+        boolean enabled = notifyBeforeCheckBox.isSelected();
+        notificationBeforeField.setEnabled(enabled);
+        // Find and enable/disable the labels that depend on this toggle
+        // We directly control the known label instances in scope
+        // beforeLabel and minLabel are local to createNotificationsSection; rely on field states only
     }
 
     private void saveSettings() {
@@ -1191,10 +1213,11 @@ public class SettingsWindow extends JFrame {
             String intervalText = updateIntervalField.getText().replace(",", "").replace(" ", "");
             configManager.setUpdateDelay(Integer.parseInt(intervalText));
 
-            configManager.setNotification(notificationsCheckBox.isSelected());
-
             String beforeText = notificationBeforeField.getText().replace(",", "").replace(" ", "");
             configManager.setNotificationBeforeMinutes(Integer.parseInt(beforeText));
+
+            configManager.setNotifyBefore(notifyBeforeCheckBox.isSelected());
+            configManager.setNotifyOnTime(notifyOnTimeCheckBox.isSelected());
 
             boolean wantAutoStart = autoStartCheckBox.isSelected();
             configManager.setAutoStart(wantAutoStart);
@@ -1208,6 +1231,7 @@ public class SettingsWindow extends JFrame {
             }
 
             LanguageHelper.setLocale(String.valueOf(languageComboBox.getSelectedItem()));
+            configManager.apiSettingsUpdated = true;
             dispose();
         } catch (NumberFormatException e) {
             showErrorDialog(

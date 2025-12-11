@@ -153,12 +153,21 @@ public class ConfigurationManager {
         saveConfig();
     }
 
-    public boolean isNotification() {
-        return Boolean.parseBoolean(properties.getProperty("notification", "true"));
+    public boolean isNotifyBefore() {
+        return Boolean.parseBoolean(properties.getProperty("notifyBefore", "true"));
     }
 
-    public void setNotification(boolean notification) {
-        properties.setProperty("notification", String.valueOf(notification));
+    public void setNotifyBefore(boolean notifyBefore) {
+        properties.setProperty("notifyBefore", String.valueOf(notifyBefore));
+        saveConfig();
+    }
+
+    public boolean isNotifyOnTime() {
+        return Boolean.parseBoolean(properties.getProperty("notifyOnTime", "true"));
+    }
+
+    public void setNotifyOnTime(boolean notifyOnTime) {
+        properties.setProperty("notifyOnTime", String.valueOf(notifyOnTime));
         saveConfig();
     }
 

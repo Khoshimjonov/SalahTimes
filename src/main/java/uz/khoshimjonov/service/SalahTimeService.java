@@ -78,9 +78,7 @@ public class SalahTimeService {
             timings.put(title("ishaTitle"), LocalTime.parse(todaysTimings.getIsha()));
             hijriDate = prayerTimes.getData().getDate().getHijri();
             configurationManager.apiSettingsUpdated = false;
-            if (configurationManager.isNotification()) {
-                prayerTimeScheduler.checkAndNotifyPrayerTimes(timings, trayIcon);
-            }
+            prayerTimeScheduler.checkAndNotifyPrayerTimes(timings, trayIcon);
         }
     }
 
