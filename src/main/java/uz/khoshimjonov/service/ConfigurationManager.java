@@ -9,10 +9,11 @@ import java.util.Properties;
 
 public class ConfigurationManager {
 
-    private static final String CONFIG_FILE = "config.properties";
+    private static final String APP_NAME = "SalahTimesWidget";
+    private static final String CONFIG_FILE_NAME = "config.properties";
 
+    private final Path configFilePath;
     private static Properties properties;
-
     private static volatile ConfigurationManager instance;
 
     public boolean apiSettingsUpdated = true;
@@ -21,8 +22,72 @@ public class ConfigurationManager {
     private boolean configurationExists = true;
 
     private ConfigurationManager() {
+        this.configFilePath = getConfigFilePath();
         properties = new Properties();
         loadConfig();
+    }
+
+    /**
+     * Gets the appropriate config directory based on OS and packaging.
+     * For Windows: %APPDATA%/SalahTimesWidget/
+     * For packaged apps, this ensures config persists across updates.
+     */
+    private static Path getConfigFilePath() {
+        Path configDir;
+
+        // Check if running from jpackage (app image)
+        String appHome = System.getProperty("app.home");
+
+        if (appHome != null) {
+            // Running as packaged app - use AppData
+            configDir = getAppDataDirectory();
+        } else {
+            // Running in development - check for portable mode or use AppData
+            Path portableConfig = Path.of(CONFIG_FILE_NAME);
+            if (Files.exists(portableConfig)) {
+                return portableConfig; // Use local config if exists (development)
+            }
+            configDir = getAppDataDirectory();
+        }
+
+        return configDir.resolve(CONFIG_FILE_NAME);
+    }
+
+    private static Path getAppDataDirectory() {
+        String os = System.getProperty("os.name").toLowerCase();
+        Path appDataDir;
+
+        if (os.contains("win")) {
+            // Windows: %APPDATA%/SalahTimesWidget
+            String appData = System.getenv("APPDATA");
+            if (appData != null) {
+                appDataDir = Path.of(appData, APP_NAME);
+            } else {
+                appDataDir = Path.of(System.getProperty("user.home"), "AppData", "Roaming", APP_NAME);
+            }
+        } else if (os.contains("mac")) {
+            // macOS: ~/Library/Application Support/SalahTimesWidget
+            appDataDir = Path.of(System.getProperty("user.home"), "Library", "Application Support", APP_NAME);
+        } else {
+            // Linux: ~/.config/SalahTimesWidget
+            String xdgConfig = System.getenv("XDG_CONFIG_HOME");
+            if (xdgConfig != null) {
+                appDataDir = Path.of(xdgConfig, APP_NAME);
+            } else {
+                appDataDir = Path.of(System.getProperty("user.home"), ".config", APP_NAME);
+            }
+        }
+
+        // Create directory if it doesn't exist
+        try {
+            Files.createDirectories(appDataDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Fallback to current directory
+            return Path.of(".");
+        }
+
+        return appDataDir;
     }
 
     public static ConfigurationManager getInstance() {
@@ -85,8 +150,8 @@ public class ConfigurationManager {
         return Double.parseDouble(properties.getProperty("elevation", "0.0"));
     }
 
-    public void setElevation(double longitude) {
-        properties.setProperty("elevation", String.valueOf(longitude));
+    public void setElevation(double elevation) {
+        properties.setProperty("elevation", String.valueOf(elevation));
         saveConfig();
     }
 
@@ -189,31 +254,6 @@ public class ConfigurationManager {
         saveConfig();
     }
 
-    private void loadConfig() {
-        try {
-            Path path = Path.of(CONFIG_FILE);
-            if (!Files.exists(path)) {
-                configurationExists = false;
-                Files.createFile(path);
-            }
-            InputStream input = new FileInputStream(CONFIG_FILE);
-            properties.load(input);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void saveConfig() {
-        try (OutputStream output = new FileOutputStream(CONFIG_FILE)) {
-            properties.store(output, "Configuration File");
-            loadConfig();
-            apiSettingsUpdated = true;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // region AutoStart
     public boolean getAutoStart() {
         return Boolean.parseBoolean(properties.getProperty("autoStart", "false"));
     }
@@ -222,5 +262,47 @@ public class ConfigurationManager {
         properties.setProperty("autoStart", String.valueOf(autoStart));
         saveConfig();
     }
-    // endregion
+
+    private void loadConfig() {
+        try {
+            Path parentDir = configFilePath.getParent();
+            if (parentDir != null && !Files.exists(parentDir)) {
+                Files.createDirectories(parentDir);
+            }
+
+            if (!Files.exists(configFilePath)) {
+                configurationExists = false;
+                Files.createFile(configFilePath);
+            }
+
+            try (InputStream input = new FileInputStream(configFilePath.toFile())) {
+                properties.load(input);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveConfig() {
+        try {
+            Path parentDir = configFilePath.getParent();
+            if (parentDir != null && !Files.exists(parentDir)) {
+                Files.createDirectories(parentDir);
+            }
+
+            try (OutputStream output = new FileOutputStream(configFilePath.toFile())) {
+                properties.store(output, "SalahTimesWidget Configuration");
+            }
+            apiSettingsUpdated = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Returns the path where config is stored (useful for debugging/support).
+     */
+    public Path getConfigPath() {
+        return configFilePath;
+    }
 }

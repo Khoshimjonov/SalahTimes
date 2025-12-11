@@ -1,14 +1,16 @@
 package uz.khoshimjonov.service;
 
 import java.io.InputStream;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 public class LanguageHelper {
     private static final String BASE_NAME = "messages";
     private static ResourceBundle resourceBundle;
+
+    private static final String[] SUPPORTED_LANGUAGES = {"uz", "en", "ru"};
 
     private static final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
 
@@ -23,15 +25,19 @@ public class LanguageHelper {
     }
 
     public static String[] getAvailableLocales() {
-        Locale[] availableLocales = Locale.getAvailableLocales();
-        Set<String> locales = new HashSet<>();
-        for (Locale availableLocale : availableLocales) {
-            String language = availableLocale.getLanguage();
-            if (!language.trim().isEmpty() && propertiesFileExists(language)) {
-                locales.add(language);
+        List<String> available = new ArrayList<>();
+
+        for (String lang : SUPPORTED_LANGUAGES) {
+            if (propertiesFileExists(lang)) {
+                available.add(lang);
             }
         }
-        return locales.toArray(new String[0]);
+
+        if (available.isEmpty()) {
+            available.add("en");
+        }
+
+        return available.toArray(new String[0]);
     }
 
     private static boolean propertiesFileExists(String languageCode) {
