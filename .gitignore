@@ -1,4 +1,6 @@
 target/
+dist/
+out/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -8,9 +10,13 @@ target/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
+.settings/
+*.swp
+*.swo
 
 ### Eclipse ###
 .apt_generated
@@ -36,3 +42,24 @@ build/
 
 ### Mac OS ###
 .DS_Store
+.DS_Store?
+
+# ===========================================
+# OS files
+# ===========================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===========================================
+# Application
+# ===========================================
+config.properties
+*.log
+
+# ===========================================
+# Temporary files
+# ===========================================
+*.tmp
+*.temp
+*.bak

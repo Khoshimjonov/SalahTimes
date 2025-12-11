@@ -1,0 +1,310 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+        default: '1.0.0'
+
+env:
+  APP_NAME: SalahTimesWidget
+  MAIN_CLASS: uz.khoshimjonov.Main
+  VENDOR: Khoshimjonov
+  DESCRIPTION: Prayer Times Desktop Widget
+  LOCALES: en,ru,uz
+  JAVA_VERSION: '21'
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: windows-latest
+
+    steps:
+      # ===========================================
+      # Setup
+      # ===========================================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Display build info
+        shell: cmd
+        run: |
+          echo.
+          echo ============================================
+          echo  Build Information
+          echo ============================================
+          echo   App Name: %APP_NAME%
+          echo   Version:  ${{ steps.version.outputs.VERSION }}
+          echo   Java:     %JAVA_VERSION%
+          echo ============================================
+          echo.
+
+      # ===========================================
+      # Step 1: Clean and create directories
+      # ===========================================
+      - name: Create directories
+        shell: cmd
+        run: |
+          if exist "build" rmdir /s /q "build"
+          mkdir "build\temp\input"
+          mkdir "build\release\windows"
+          mkdir "build\release\windows-debug"
+          mkdir "build\release\cross-platform"
+
+      # ===========================================
+      # Step 2: Maven build
+      # ===========================================
+      - name: Build with Maven
+        shell: cmd
+        run: |
+          call mvn clean package -DskipTests -q
+          if errorlevel 1 exit /b 1
+          
+          if not exist "target\%APP_NAME%.jar" (
+            echo ERROR: JAR not found
+            exit /b 1
+          )
+          
+          copy "target\%APP_NAME%.jar" "build\temp\input\" >nul
+
+      # ===========================================
+      # Step 3: Create cross-platform package
+      # ===========================================
+      - name: Create cross-platform package
+        shell: cmd
+        run: |
+          copy "target\%APP_NAME%.jar" "build\release\cross-platform\" >nul
+          
+          (
+            echo @echo off
+            echo title %APP_NAME%
+            echo java -jar "%APP_NAME%.jar" %%*
+            echo if errorlevel 1 ^(
+            echo     echo.
+            echo     echo Application exited with error. Press any key to close.
+            echo     pause ^>nul
+            echo ^)
+          ) > "build\release\cross-platform\run-windows.bat"
+          
+          (
+            echo #!/bin/bash
+            echo cd "$$(dirname "$$0")"
+            echo java -jar %APP_NAME%.jar "$$@"
+          ) > "build\release\cross-platform\run-linux-mac.sh"
+          
+          (
+            echo ================================================================
+            echo  %APP_NAME% v${{ steps.version.outputs.VERSION }}
+            echo  %DESCRIPTION%
+            echo ================================================================
+            echo.
+            echo REQUIREMENTS:
+            echo   - Java 21 or later
+            echo.
+            echo ----------------------------------------------------------------
+            echo  WINDOWS
+            echo ----------------------------------------------------------------
+            echo   Option 1: Double-click "run-windows.bat"
+            echo   Option 2: Open terminal and run: java -jar %APP_NAME%.jar
+            echo.
+            echo ----------------------------------------------------------------
+            echo  LINUX / MAC
+            echo ----------------------------------------------------------------
+            echo   chmod +x run-linux-mac.sh
+            echo   ./run-linux-mac.sh
+            echo.
+            echo   Or: java -jar %APP_NAME%.jar
+            echo.
+            echo ================================================================
+          ) > "build\release\cross-platform\README.txt"
+
+      # ===========================================
+      # Step 4: Create custom JRE
+      # ===========================================
+      - name: Create custom JRE
+        shell: cmd
+        run: |
+          "%JAVA_HOME%\bin\jlink" ^
+            --add-modules java.base,java.desktop,java.logging,java.prefs,java.net.http,jdk.crypto.ec,jdk.localedata ^
+            --include-locales=%LOCALES% ^
+            --strip-debug ^
+            --no-man-pages ^
+            --no-header-files ^
+            --compress=zip-6 ^
+            --output "build\temp\runtime"
+
+      # ===========================================
+      # Step 5: Create Windows production build
+      # ===========================================
+      - name: Create Windows production build
+        shell: cmd
+        run: |
+          set "ICON_OPTION="
+          if exist "src\main\resources\images\main.ico" set "ICON_OPTION=--icon src\main\resources\images\main.ico"
+          
+          "%JAVA_HOME%\bin\jpackage" ^
+            --type app-image ^
+            --name "%APP_NAME%" ^
+            --input "build\temp\input" ^
+            --main-jar "%APP_NAME%.jar" ^
+            --main-class "%MAIN_CLASS%" ^
+            --runtime-image "build\temp\runtime" ^
+            --dest "build\release\windows" ^
+            --app-version "${{ steps.version.outputs.VERSION }}" ^
+            --vendor "%VENDOR%" ^
+            --description "%DESCRIPTION%" ^
+            %ICON_OPTION% ^
+            --java-options "-Xmx256m" ^
+            --java-options "-Dfile.encoding=UTF-8" ^
+            --java-options "-Dapp.version=${{ steps.version.outputs.VERSION }}"
+
+      # ===========================================
+      # Step 6: Create Windows debug build
+      # ===========================================
+      - name: Create Windows debug build
+        shell: cmd
+        run: |
+          set "ICON_OPTION="
+          if exist "src\main\resources\images\main.ico" set "ICON_OPTION=--icon src\main\resources\images\main.ico"
+          
+          "%JAVA_HOME%\bin\jpackage" ^
+            --type app-image ^
+            --name "%APP_NAME%-Debug" ^
+            --input "build\temp\input" ^
+            --main-jar "%APP_NAME%.jar" ^
+            --main-class "%MAIN_CLASS%" ^
+            --runtime-image "build\temp\runtime" ^
+            --dest "build\release\windows-debug" ^
+            --app-version "${{ steps.version.outputs.VERSION }}" ^
+            --vendor "%VENDOR%" ^
+            --description "%DESCRIPTION% (Debug)" ^
+            %ICON_OPTION% ^
+            --win-console ^
+            --java-options "-Xmx256m" ^
+            --java-options "-Dfile.encoding=UTF-8" ^
+            --java-options "-Dapp.version=${{ steps.version.outputs.VERSION }}" ^
+            --java-options "-Dapp.debug=true"
+
+      # ===========================================
+      # Step 7: Create distribution ZIPs
+      # ===========================================
+      - name: Create distribution ZIPs
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $appName = "$env:APP_NAME"
+          
+          # Windows production
+          Compress-Archive -Path "build/release/windows/$appName" `
+            -DestinationPath "build/release/$appName-$version-windows.zip" -Force
+          
+          # Windows debug
+          Compress-Archive -Path "build/release/windows-debug/$appName-Debug" `
+            -DestinationPath "build/release/$appName-$version-windows-debug.zip" -Force
+          
+          # Cross-platform
+          Compress-Archive -Path "build/release/cross-platform/*" `
+            -DestinationPath "build/release/$appName-$version-cross-platform.zip" -Force
+
+      # ===========================================
+      # Step 8: Cleanup
+      # ===========================================
+      - name: Cleanup temporary files
+        shell: cmd
+        run: |
+          if exist "build\temp" rmdir /s /q "build\temp"
+
+      # ===========================================
+      # Step 9: Upload artifacts (for debugging)
+      # ===========================================
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: |
+            build/release/*.zip
+          retention-days: 5
+
+      # ===========================================
+      # Step 10: Create GitHub Release
+      # ===========================================
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ env.APP_NAME }} v${{ steps.version.outputs.VERSION }}
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## 📦 Downloads
+            
+            | Platform | File | Size | Requirements |
+            |----------|------|------|--------------|
+            | 🪟 Windows | `${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-windows.zip` | ~50 MB | None (Java bundled) |
+            | 🪟 Windows (Debug) | `${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-windows-debug.zip` | ~50 MB | None (shows console) |
+            | 🌐 Cross-platform | `${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-cross-platform.zip` | ~1 MB | Java 21+ |
+            
+            ---
+            
+            ## 🪟 Windows Installation
+            
+            1. Download `${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-windows.zip`
+            2. Extract to any folder
+            3. Run `${{ env.APP_NAME }}.exe`
+            
+            > **Note:** Windows may show a SmartScreen warning. Click "More info" → "Run anyway".
+            
+            ---
+            
+            ## 🍎 macOS / 🐧 Linux Installation
+            
+            1. Download `${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-cross-platform.zip`
+            2. Extract to any folder
+            3. Install Java
+            4. Run:
+               ```bash
+               chmod +x run-linux-mac.sh
+               ./run-linux-mac.sh
+               ```
+               Or directly:
+               ```bash
+               java -jar ${{ env.APP_NAME }}.jar
+               ```
+            
+            ---
+            
+            ## 🐛 Troubleshooting
+            
+            - **Windows Debug version**: Use this if the app doesn't start - it shows a console window with error messages.
+            - **Java not found**: Download and install Java
+            - **App doesn't start**: Check if another instance is already running in system tray.
+
+          files: |
+            build/release/${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-windows.zip
+            build/release/${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-windows-debug.zip
+            build/release/${{ env.APP_NAME }}-${{ steps.version.outputs.VERSION }}-cross-platform.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -246,7 +246,7 @@ public class ConfigurationManager {
     }
 
     public int getNotificationBeforeMinutes() {
-        return Integer.parseInt(properties.getProperty("notificationBeforeMinutes", "30"));
+        return Integer.parseInt(properties.getProperty("notificationBeforeMinutes", "40"));
     }
 
     public void setNotificationBeforeMinutes(int minutes) {

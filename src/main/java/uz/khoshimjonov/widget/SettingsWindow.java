@@ -453,7 +453,6 @@ public class SettingsWindow extends JFrame {
         content.add(Box.createVerticalStrut(8));
 
         String[] availableLocales = LanguageHelper.getAvailableLocales();
-        System.out.println("Available locales: " + Arrays.toString(availableLocales));
         languageComboBox = createStyledComboBox(availableLocales);
         languageComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         languageComboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
